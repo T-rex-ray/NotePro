@@ -42,14 +42,22 @@ export default function App() {
     setActiveIdState(id);
   }, []);
 
-  // Регистрируем шаг истории при первом реальном взаимодействии с экраном,
-  // чтобы Chrome на Android не блокировал перехват кнопки "Назад"
+  // Создаем 2 уровня истории (view -> edit) при первом касании экрана или вводе текста,
+  // чтобы Chrome на Android гарантированно разрешил перехват двух нажатий "Назад"
   const armHistory = useCallback(() => {
     if (historyArmedRef.current) return;
-    if (screenRef.current !== 'list') {
+    const current = screenRef.current;
+    const id = activeIdRef.current;
+
+    if (current === 'edit') {
       historyArmedRef.current = true;
       history.replaceState({ screen: 'list' }, '');
-      history.pushState({ screen: screenRef.current, id: activeIdRef.current }, '');
+      history.pushState({ screen: 'view', id }, '');
+      history.pushState({ screen: 'edit', id }, '');
+    } else if (current === 'view') {
+      historyArmedRef.current = true;
+      history.replaceState({ screen: 'list' }, '');
+      history.pushState({ screen: 'view', id }, '');
     }
   }, []);
 
@@ -63,7 +71,7 @@ export default function App() {
     document.documentElement.classList.toggle('dark', settings.theme === 'dark');
   }, [settings]);
 
-  // Слушаем первое касание или нажатие клавиши, чтобы активировать историю для кнопки "Назад"
+  // Активируем стек истории при первом касании или нажатии клавиши
   useEffect(() => {
     const onInteract = () => armHistory();
     window.addEventListener('pointerdown', onInteract, { passive: true });
@@ -74,7 +82,7 @@ export default function App() {
     };
   }, [armHistory]);
 
-  // Обработка системной стрелочки "Назад": из редактирования/просмотра -> сразу в список заметок
+  // Пошаговый возврат: 1) edit -> view, 2) view -> list, 3) list -> свернуть приложение
   useEffect(() => {
     const blurActive = () => {
       (document.activeElement as HTMLElement | null)?.blur?.();
@@ -94,20 +102,36 @@ export default function App() {
       const currentScreen = screenRef.current;
       const id = activeIdRef.current;
 
-      if (currentScreen === 'edit' || currentScreen === 'view') {
+      if (currentScreen === 'edit') {
         const note = notesRef.current.find((n) => n.id === id);
         const isEmpty = !note || (!note.title.trim() && !note.content.trim());
-        goList(isEmpty ? id : null);
+
+        // Если заметка пустая — удаляем черновик и сразу идем в список
+        if (isEmpty) {
+          goList(id);
+          return;
+        }
+
+        // Шаг 1: выходим из редактирования, остается режим просмотра
+        blurActive();
+        applyScreen('view');
         return;
       }
-      // На экране списка (list) больше не перехватываем — следующее нажатие свернет блокнот
+
+      if (currentScreen === 'view') {
+        // Шаг 2: из просмотра возвращаемся к списку заметок
+        goList(null);
+        return;
+      }
+
+      // Шаг 3: на списке (list) не перехватываем — ОС сворачивает блокнот
     };
 
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, [applyActiveId, applyScreen]);
 
-  // Стартовая инициализация
+  // Начальный запуск приложения
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
@@ -117,6 +141,7 @@ export default function App() {
       setNotes((p) => [draft, ...p]);
       applyActiveId(draft.id);
       history.replaceState({ screen: 'list' }, '');
+      history.pushState({ screen: 'view', id: draft.id }, '');
       history.pushState({ screen: 'edit', id: draft.id }, '');
     } else {
       history.replaceState({ screen: 'list' }, '');
@@ -136,7 +161,7 @@ export default function App() {
     [armHistory]
   );
 
-  // Кнопка "Мои заметки" в верхнем меню
+  // Кнопка "Мои заметки" в верхней панели (быстрый выход сразу к списку)
   const exitToList = useCallback(() => {
     const id = activeIdRef.current;
     const note = notesRef.current.find((n) => n.id === id);
@@ -159,15 +184,16 @@ export default function App() {
     applyActiveId(draft.id);
     applyScreen('edit');
     historyArmedRef.current = true;
+    history.pushState({ screen: 'view', id: draft.id }, '');
     history.pushState({ screen: 'edit', id: draft.id }, '');
   }, [applyActiveId, applyScreen]);
 
   const openNote = useCallback(
     (id: string) => {
       applyActiveId(id);
-      applyScreen('edit');
+      applyScreen('view');
       historyArmedRef.current = true;
-      history.pushState({ screen: 'edit', id }, '');
+      history.pushState({ screen: 'view', id }, '');
     },
     [applyActiveId, applyScreen]
   );
@@ -176,6 +202,8 @@ export default function App() {
     const id = activeIdRef.current;
     if (!id) return;
     applyScreen('edit');
+    historyArmedRef.current = true;
+    history.pushState({ screen: 'edit', id }, '');
   }, [applyScreen]);
 
   const requestDelete = useCallback((id: string) => setPendingDeleteId(id), []);

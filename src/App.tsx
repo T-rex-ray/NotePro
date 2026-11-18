@@ -25,12 +25,11 @@ export default function App() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [savedJustNow, setSavedJustNow] = useState(false);
 
-  // Refs mirrored synchronously so the popstate handler always sees current values
   const screenRef = useRef(screen);
   const activeIdRef = useRef(activeId);
   const notesRef = useRef(notes);
-  const uiToListRef = useRef(false);
   const bootedRef = useRef(false);
+  const historyArmedRef = useRef(false);
   const savedTimer = useRef<number | null>(null);
 
   const applyScreen = useCallback((s: Screen) => {
@@ -43,79 +42,90 @@ export default function App() {
     setActiveIdState(id);
   }, []);
 
+  // Регистрируем шаг истории при первом реальном взаимодействии с экраном,
+  // чтобы Chrome на Android не блокировал перехват кнопки "Назад"
+  const armHistory = useCallback(() => {
+    if (historyArmedRef.current) return;
+    if (screenRef.current !== 'list') {
+      historyArmedRef.current = true;
+      history.replaceState({ screen: 'list' }, '');
+      history.pushState({ screen: screenRef.current, id: activeIdRef.current }, '');
+    }
+  }, []);
+
   useEffect(() => {
     notesRef.current = notes;
-  }, [notes]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', settings.theme === 'dark');
-  }, [settings.theme]);
-
-  // Empty drafts never reach the persisted list
-  useEffect(() => {
     saveNotes(notes.filter((n) => n.title.trim() || n.content.trim()));
   }, [notes]);
 
   useEffect(() => {
     saveSettings(settings);
+    document.documentElement.classList.toggle('dark', settings.theme === 'dark');
   }, [settings]);
 
-  // System back button: edit → view → list. At the list the app no longer
-  // intercepts anything, so the OS can minimize/close the PWA as usual.
+  // Слушаем первое касание или нажатие клавиши, чтобы активировать историю для кнопки "Назад"
+  useEffect(() => {
+    const onInteract = () => armHistory();
+    window.addEventListener('pointerdown', onInteract, { passive: true });
+    window.addEventListener('keydown', onInteract, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', onInteract);
+      window.removeEventListener('keydown', onInteract);
+    };
+  }, [armHistory]);
+
+  // Обработка системной стрелочки "Назад": из редактирования/просмотра -> сразу в список заметок
   useEffect(() => {
     const blurActive = () => {
       (document.activeElement as HTMLElement | null)?.blur?.();
     };
 
     const goList = (discardId: string | null) => {
-      if (discardId) setNotes((p) => p.filter((n) => n.id !== discardId));
+      if (discardId) {
+        setNotes((p) => p.filter((n) => n.id !== discardId));
+      }
       blurActive();
       applyActiveId(null);
       applyScreen('list');
+      historyArmedRef.current = false;
     };
 
     const onPopState = () => {
-      const prev = screenRef.current;
+      const currentScreen = screenRef.current;
       const id = activeIdRef.current;
 
-      if (prev === 'edit') {
+      if (currentScreen === 'edit' || currentScreen === 'view') {
         const note = notesRef.current.find((n) => n.id === id);
         const isEmpty = !note || (!note.title.trim() && !note.content.trim());
-        if (uiToListRef.current || isEmpty) {
-          uiToListRef.current = false;
-          goList(isEmpty ? id : null);
-          return;
-        }
-        // Step 1: save (already autosaved), drop focus, show view mode.
-        blurActive();
-        applyScreen('view');
-        // Re-add an entry so the next back press goes to the list.
-        history.pushState({ screen: 'view', id }, '');
+        goList(isEmpty ? id : null);
         return;
       }
-
-      // Step 2: view → list.
-      goList(null);
+      // На экране списка (list) больше не перехватываем — следующее нажатие свернет блокнот
     };
 
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, [applyActiveId, applyScreen]);
 
-  // Quick-start: the opening editor gets its draft and a history entry
+  // Стартовая инициализация
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
+
     if (screenRef.current === 'edit') {
       const draft = makeNote();
       setNotes((p) => [draft, ...p]);
       applyActiveId(draft.id);
+      history.replaceState({ screen: 'list' }, '');
       history.pushState({ screen: 'edit', id: draft.id }, '');
+    } else {
+      history.replaceState({ screen: 'list' }, '');
     }
   }, [applyActiveId]);
 
   const updateNote = useCallback(
     (id: string, patch: Partial<Note>) => {
+      armHistory();
       setNotes((prev) =>
         prev.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n))
       );
@@ -123,28 +133,41 @@ export default function App() {
       if (savedTimer.current) window.clearTimeout(savedTimer.current);
       savedTimer.current = window.setTimeout(() => setSavedJustNow(false), 1200);
     },
-    []
+    [armHistory]
   );
 
-  // UI path back to the list: reuse history so the stack stays consistent
+  // Кнопка "Мои заметки" в верхнем меню
   const exitToList = useCallback(() => {
-    uiToListRef.current = true;
-    history.back();
-  }, []);
+    const id = activeIdRef.current;
+    const note = notesRef.current.find((n) => n.id === id);
+    const isEmpty = !note || (!note.title.trim() && !note.content.trim());
+
+    if (isEmpty && id) {
+      setNotes((p) => p.filter((n) => n.id !== id));
+    }
+
+    (document.activeElement as HTMLElement | null)?.blur?.();
+    applyActiveId(null);
+    applyScreen('list');
+    historyArmedRef.current = false;
+    history.replaceState({ screen: 'list' }, '');
+  }, [applyActiveId, applyScreen]);
 
   const createNote = useCallback(() => {
     const draft = makeNote();
     setNotes((p) => [draft, ...p]);
     applyActiveId(draft.id);
     applyScreen('edit');
+    historyArmedRef.current = true;
     history.pushState({ screen: 'edit', id: draft.id }, '');
   }, [applyActiveId, applyScreen]);
 
   const openNote = useCallback(
     (id: string) => {
       applyActiveId(id);
-      applyScreen('view');
-      history.pushState({ screen: 'view', id }, '');
+      applyScreen('edit');
+      historyArmedRef.current = true;
+      history.pushState({ screen: 'edit', id }, '');
     },
     [applyActiveId, applyScreen]
   );
@@ -153,7 +176,6 @@ export default function App() {
     const id = activeIdRef.current;
     if (!id) return;
     applyScreen('edit');
-    history.replaceState({ screen: 'edit', id }, '');
   }, [applyScreen]);
 
   const requestDelete = useCallback((id: string) => setPendingDeleteId(id), []);
@@ -165,8 +187,8 @@ export default function App() {
     setNotes((p) => p.filter((n) => n.id !== id));
     applyActiveId(null);
     applyScreen('list');
-    // Consume the pushed editor/view entry so the next back exits the app
-    history.back();
+    historyArmedRef.current = false;
+    history.replaceState({ screen: 'list' }, '');
   }, [pendingDeleteId, applyActiveId, applyScreen]);
 
   const toggleTheme = useCallback(() => {
@@ -185,7 +207,7 @@ export default function App() {
       {(screen === 'edit' || screen === 'view') && activeNote && (
         <Editor
           note={activeNote}
-          notesCount={notes.length}
+          notesCount={notes.filter((n) => n.title.trim() || n.content.trim()).length}
           dark={settings.theme === 'dark'}
           savedJustNow={savedJustNow}
           viewing={screen === 'view'}

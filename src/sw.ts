@@ -1,19 +1,19 @@
 import { clientsClaim } from 'workbox-core';
-import { registerRoute } from 'workbox-routing';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
-import { NavigationRoute } from 'workbox-routing';
 
 declare let self: ServiceWorkerGlobalScope & { location: Window['location'] };
 
+self.skipWaiting();
 clientsClaim();
 
 precacheAndRoute(self.__WB_MANIFEST);
 
-const navHandler = createHandlerBoundToURL('index.html');
+const navHandler = createHandlerBoundToURL('/NotePro/index.html');
 const navigation = new NavigationRoute(navHandler, {
-  denylist: [/^\/sw\.js$/, /^\/manifest\.webmanifest$/],
+  denylist: [/sw\.js$/, /manifest\.webmanifest$/],
 });
 registerRoute(navigation);
 

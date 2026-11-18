@@ -5,6 +5,7 @@ import { fileURLToPath, URL } from 'node:url';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/NotePro/',
   plugins: [
     react(),
     VitePWA({
@@ -15,7 +16,7 @@ export default defineConfig({
       includeAssets: ['icon.svg', 'fonts/**/*.woff2'],
       injectRegister: 'script-defer',
       manifest: {
-        id: '/',
+        id: '/NotePro/',
         name: 'Блокнот — быстрые заметки',
         short_name: 'Блокнот',
         description: 'Простой блокнот с автосохранением, быстрым запуском и тёмной темой',
@@ -24,15 +25,15 @@ export default defineConfig({
         display: 'standalone',
         display_override: ['standalone', 'minimal-ui'],
         orientation: 'portrait',
-        start_url: '/',
-        scope: '/',
+        start_url: '/NotePro/',
+        scope: '/NotePro/',
         background_color: '#f8fafc',
         theme_color: '#0f766e',
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
           {
-            src: '/icon-512.png',
+            src: 'icon-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

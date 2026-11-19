@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, List, Moon, Pencil, Share2, Sun, Trash2 } from 'lucide-react';import { formatDateTime, type Note } from '../lib/notes';
+import { ArrowLeft, Check, List, Moon, Pencil, Share2, Sun, Trash2 } from 'lucide-react';
+import { formatDateTime, type Note } from '../lib/notes';
 
 interface EditorProps {
   note: Note;
@@ -33,7 +34,7 @@ export default function Editor({
   const [toast, setToast] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Entering edit mode: focus and place the caret at the very end of the text
+  // При входе в редактирование ставим фокус и курсор в конец текста
   useEffect(() => {
     if (viewing) return;
     const el = contentRef.current;
@@ -44,16 +45,32 @@ export default function Editor({
     }
   }, [note.id, viewing]);
 
-  const handleTap = useCallback(() => {
-    if (!viewing) return;
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) {
-      lastTapRef.current = 0;
-      onStartEdit();
-    } else {
-      lastTapRef.current = now;
-    }
-  }, [viewing, onStartEdit]);
+  const handleMainClick = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      // В режиме просмотра оставляем двойной тап для перехода в редактирование
+      if (viewing) {
+        const now = Date.now();
+        if (now - lastTapRef.current < 300) {
+          lastTapRef.current = 0;
+          onStartEdit();
+        } else {
+          lastTapRef.current = now;
+        }
+        return;
+      }
+
+      // В режиме редактирования тап по любому пустому месту экрана фокусирует поле ввода и открывает клавиатуру
+      if (e.target === e.currentTarget) {
+        const el = contentRef.current;
+        if (el) {
+          el.focus();
+          const end = el.value.length;
+          el.setSelectionRange(end, end);
+        }
+      }
+    },
+    [viewing, onStartEdit]
+  );
 
   useEffect(() => {
     if (!toast) return;
@@ -77,7 +94,7 @@ export default function Editor({
         setToast('Текст скопирован в буфер обмена');
       }
     } catch {
-      // user cancelled the share dialog
+      // пользователь отменил отправку
     }
   }, [note.title, note.content]);
 
@@ -138,17 +155,24 @@ export default function Editor({
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto px-4 pt-3" onClick={handleTap}>
+      <main
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-3 pb-6"
+        onClick={handleMainClick}
+      >
         <input
           type="text"
           value={note.title}
           readOnly={viewing}
           tabIndex={viewing ? -1 : 0}
-          className={viewing ? 'pointer-events-none w-full bg-transparent text-xl font-semibold outline-none' : 'w-full bg-transparent text-xl font-semibold placeholder-slate-400 outline-none dark:placeholder-slate-500'}
+          className={
+            viewing
+              ? 'pointer-events-none w-full shrink-0 bg-transparent text-xl font-semibold outline-none'
+              : 'w-full shrink-0 bg-transparent text-xl font-semibold placeholder-slate-400 outline-none dark:placeholder-slate-500'
+          }
           onChange={(e) => onChange({ title: e.target.value })}
           placeholder="Заголовок (необязательно)"
         />
-        <div className="mt-1 pb-1 text-xs text-slate-400 dark:text-slate-500">
+        <div className="mt-1 shrink-0 pb-2 text-xs text-slate-400 dark:text-slate-500">
           Изменено: {formatDateTime(note.updatedAt)}
         </div>
         <textarea
@@ -156,23 +180,17 @@ export default function Editor({
           value={note.content}
           readOnly={viewing}
           tabIndex={viewing ? -1 : 0}
-          className={viewing ? 'pointer-events-none min-h-[55vh] w-full resize-none bg-transparent text-[17px] leading-relaxed outline-none' : 'min-h-[55vh] w-full resize-none bg-transparent text-[17px] leading-relaxed placeholder-slate-400 outline-none dark:placeholder-slate-500'}
+          className={
+            viewing
+              ? 'pointer-events-none w-full flex-1 resize-none bg-transparent text-[17px] leading-relaxed outline-none'
+              : 'w-full flex-1 resize-none bg-transparent text-[17px] leading-relaxed placeholder-slate-400 outline-none dark:placeholder-slate-500'
+          }
           onChange={(e) => onChange({ content: e.target.value })}
           placeholder="Начните писать…"
-          rows={1}
-          style={{ height: 'auto' }}
-          onInput={(e) => {
-            const el = e.currentTarget;
-            el.style.height = 'auto';
-            el.style.height = `${el.scrollHeight}px`;
-          }}
         />
-        <div className="h-8" />
       </main>
 
-      <footer
-        className="sticky bottom-0 flex items-center justify-between border-t border-slate-200 bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 text-xs text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400"
-      >
+      <footer className="sticky bottom-0 flex items-center justify-between border-t border-slate-200 bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 text-xs text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400">
         {viewing ? (
           <span>Режим просмотра</span>
         ) : (

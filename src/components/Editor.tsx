@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, List, Moon, Pencil, Share2, Sun, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Moon, Pencil, Share2, Sun, Trash2 } from 'lucide-react';
 import { formatDateTime, type Note } from '../lib/notes';
 interface EditorProps {
   note: Note;
@@ -16,12 +16,10 @@ interface EditorProps {
 }
 export default function Editor({
   note,
-  notesCount,
   dark,
   savedJustNow,
   viewing,
   onBack,
-  onOpenList,
   onStartEdit,
   onChange,
   onDelete,
@@ -89,7 +87,7 @@ export default function Editor({
   return (
     <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <header
-        className="sticky top-0 z-10 flex items-center gap-1 border-b border-slate-200 bg-white/95 px-2 pt-[env(safe-area-inset-top)] pb-2 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95"
+        className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-2 pt-[env(safe-area-inset-top)] pb-2 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.5rem)' }}
       >
         <button
@@ -99,17 +97,7 @@ export default function Editor({
         >
           <ArrowLeft size={22} />
         </button>
-        <button
-          onClick={onOpenList}
-          className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-teal-700 transition hover:bg-teal-50 active:scale-95 dark:text-teal-300 dark:hover:bg-slate-800"
-        >
-          <List size={18} />
-          Мои заметки
-          <span className="min-w-[1.75rem] rounded-full bg-teal-100 px-1.5 text-center text-xs font-semibold leading-6 text-teal-800 dark:bg-teal-900 dark:text-teal-200">
-            {notesCount}
-          </span>
-        </button>
-        <div className="ml-auto flex items-center">
+        <div className="flex items-center gap-1">
           <button
             onClick={onToggleTheme}
             aria-label={dark ? 'Светлая тема' : 'Тёмная тема'}
@@ -121,9 +109,9 @@ export default function Editor({
             <button
               onClick={onStartEdit}
               aria-label="Редактировать заметку"
-              className="rounded-full bg-teal-100 p-[0.875rem] text-teal-700 transition hover:bg-teal-200 active:scale-95 dark:bg-teal-900 dark:text-teal-200 dark:hover:bg-teal-800"
+              className="rounded-full bg-teal-100 p-3 text-teal-700 transition hover:bg-teal-200 active:scale-95 dark:bg-teal-900 dark:text-teal-200 dark:hover:bg-teal-800"
             >
-              <Pencil size={23} />
+              <Pencil size={21} />
             </button>
           )}
           <button

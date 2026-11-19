@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ClipboardList, FileText, Moon, Plus, Search, Settings, Sun, X } from 'lucide-react';
 import { noteTitle, type Note } from '../lib/notes';
 import NoteCard from './NoteCard';
@@ -35,15 +35,28 @@ export default function NotesList({
   onEmptyTrash,
 }: NotesListProps) {
   const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!toast) return;
     const t = window.setTimeout(() => setToast(''), 2000);
     return () => window.clearTimeout(t);
   }, [toast]);
+
+  useEffect(() => {
+    if (searchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchOpen]);
+
+  const closeSearch = () => {
+    setQuery('');
+    setSearchOpen(false);
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -89,9 +102,26 @@ export default function NotesList({
         className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
       >
-        <div className="flex items-center justify-between pb-2">
-          <h1 className="text-xl font-bold">Мои заметки</h1>
-          <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between pb-2.5">
+          <h1
+            className="select-none text-3xl font-bold tracking-wide text-slate-900 dark:text-white"
+            style={{ fontFamily: "'Caveat', cursive" }}
+          >
+            MyNote<span className="text-teal-600 dark:text-teal-400">Pro</span>
+          </h1>
+
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
+              aria-label="Поиск"
+              className={`rounded-full p-2.5 transition active:scale-95 ${
+                searchOpen
+                  ? 'bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Search size={20} />
+            </button>
             <button
               onClick={onToggleTheme}
               aria-label={dark ? 'Светлая тема' : 'Тёмная тема'}
@@ -102,35 +132,36 @@ export default function NotesList({
             <button
               onClick={() => setSettingsOpen(true)}
               aria-label="Настройки"
-              className="relative rounded-full p-2.5 text-slate-600 transition hover:bg-slate-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="rounded-full p-2.5 text-slate-600 transition hover:bg-slate-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               <Settings size={20} />
             </button>
           </div>
         </div>
 
-        <div className="relative pb-2">
-          <Search
-            size={18}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-          />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Поиск заметок…"
-            className="w-full rounded-full border border-slate-200 bg-slate-100 py-2.5 pl-10 pr-10 text-sm outline-none transition focus:border-teal-500 focus:bg-white dark:border-slate-600 dark:bg-slate-800 dark:focus:bg-slate-800"
-          />
-          {query && (
+        {searchOpen && (
+          <div className="relative pb-2.5">
+            <Search
+              size={17}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Поиск заметок…"
+              className="w-full rounded-full border border-teal-500/60 bg-slate-100 py-2 pl-10 pr-10 text-sm outline-none transition focus:bg-white dark:border-teal-500/40 dark:bg-slate-800 dark:focus:bg-slate-800"
+            />
             <button
-              onClick={() => setQuery('')}
-              aria-label="Очистить поиск"
+              onClick={closeSearch}
+              aria-label="Закрыть поиск"
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700"
             >
               <X size={16} />
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <button
           onClick={() => onChangeStartupMode(startupMode === 'quick' ? 'list' : 'quick')}

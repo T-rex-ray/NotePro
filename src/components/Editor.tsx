@@ -134,35 +134,43 @@ export default function Editor({
         className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-3 pb-6"
         onClick={handleMainClick}
       >
-        <input
-          type="text"
-          value={note.title}
-          readOnly={viewing}
-          tabIndex={viewing ? -1 : 0}
-          className={
-            viewing
-              ? 'pointer-events-none w-full shrink-0 bg-transparent text-xl font-semibold outline-none'
-              : 'w-full shrink-0 bg-transparent text-xl font-semibold placeholder-slate-400 outline-none dark:placeholder-slate-500'
-          }
-          onChange={(e) => onChange({ title: e.target.value })}
-          placeholder="Заголовок (необязательно)"
-        />
-        <div className="mt-1 mb-3 shrink-0 border-b border-slate-200 pb-2.5 text-xs text-slate-400 dark:border-slate-700/80 dark:text-slate-500">
-          Изменено: {formatDateTime(note.updatedAt)}
-        </div>
-        <textarea
-          ref={contentRef}
-          value={note.content}
-          readOnly={viewing}
-          tabIndex={viewing ? -1 : 0}
-          className={
-            viewing
-              ? 'pointer-events-none w-full flex-1 resize-none bg-transparent text-[17px] leading-relaxed outline-none'
-              : 'w-full flex-1 resize-none bg-transparent text-[17px] leading-relaxed placeholder-slate-400 outline-none dark:placeholder-slate-500'
-          }
-          onChange={(e) => onChange({ content: e.target.value })}
-          placeholder="Начните писать…"
-        />
+        {viewing ? (
+          <>
+            {note.title.trim() && (
+              <h1 className="w-full shrink-0 text-xl font-semibold text-slate-900 dark:text-slate-100">
+                {note.title}
+              </h1>
+            )}
+            <div className="mt-1 mb-3 shrink-0 border-b border-slate-200 pb-2.5 text-xs text-slate-400 dark:border-slate-700/80 dark:text-slate-500">
+              Изменено: {formatDateTime(note.updatedAt)}
+            </div>
+            <div className="w-full flex-1 whitespace-pre-wrap break-words text-[17px] leading-relaxed text-slate-800 dark:text-slate-200">
+              {note.content || (
+                <span className="text-slate-400 dark:text-slate-500">Пустая заметка</span>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <input
+              type="text"
+              value={note.title}
+              className="w-full shrink-0 bg-transparent text-xl font-semibold placeholder-slate-400 outline-none dark:placeholder-slate-500"
+              onChange={(e) => onChange({ title: e.target.value })}
+              placeholder="Заголовок (необязательно)"
+            />
+            <div className="mt-1 mb-3 shrink-0 border-b border-slate-200 pb-2.5 text-xs text-slate-400 dark:border-slate-700/80 dark:text-slate-500">
+              Изменено: {formatDateTime(note.updatedAt)}
+            </div>
+            <textarea
+              ref={contentRef}
+              value={note.content}
+              className="w-full flex-1 resize-none bg-transparent text-[17px] leading-relaxed placeholder-slate-400 outline-none dark:placeholder-slate-500"
+              onChange={(e) => onChange({ content: e.target.value })}
+              placeholder="Начните писать…"
+            />
+          </>
+        )}
       </main>
       <footer className="sticky bottom-0 flex items-center justify-between border-t border-slate-200 bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 text-xs text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400">
         {viewing ? (

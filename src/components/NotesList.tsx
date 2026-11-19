@@ -30,7 +30,6 @@ export default function NotesList({
   const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Рефы для точного определения долгого нажатия без ложных срабатываний при прокрутке
   const timerRef = useRef<number | null>(null);
   const startPosRef = useRef<{ x: number; y: number } | null>(null);
   const longPressedRef = useRef(false);
@@ -83,11 +82,10 @@ export default function NotesList({
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!startPosRef.current || timerRef.current === null) return;
+    if (e.touches.length === 0) return;
     const touch = e.touches[0];
-    if (!touch) return;
     const dx = Math.abs(touch.clientX - startPosRef.current.x);
     const dy = Math.abs(touch.clientY - startPosRef.current.y);
-    // Если палец сдвинулся больше чем на 10px — пользователь листает список, отменяем меню
     if (dx > 10 || dy > 10) {
       clearPressTimer();
     }
@@ -134,7 +132,7 @@ export default function NotesList({
       archive: 'Архивировать',
       delete: 'Удалить',
       color: 'Цвет карточки',
-      remind: 'Напоминание',
+      remind: 'Напомнить',
       pdf: 'Экспорт в PDF',
     };
     setToast(`Функция «${names[action]}» — добавим следующим шагом`);
@@ -261,8 +259,11 @@ export default function NotesList({
         <Plus size={26} />
       </button>
 
-      {/* Двухрядная панель действий по удержанию */}
       <NoteContextMenu
         note={activeMenuNote}
         onClose={() => setMenuNoteId(null)}
         onAction={handleMenuAction}
+      />
+
+      {toast && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center px-6">

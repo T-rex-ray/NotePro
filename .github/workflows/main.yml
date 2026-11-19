@@ -19,6 +19,8 @@ jobs:
         with:
           node-version: "20"
       - run: npm install
+      - run: npx --yes sharp-cli -i public/icon.svg -o public/icon-192.png resize 192 192
+      - run: npx --yes sharp-cli -i public/icon.svg -o public/icon-512.png resize 512 512
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

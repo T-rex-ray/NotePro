@@ -4,6 +4,7 @@ export interface Note {
   content: string;
   createdAt: number;
   updatedAt: number;
+  deletedAt?: number;
 }
 
 export interface Settings {
@@ -37,7 +38,7 @@ export function saveNotes(notes: Note[]): void {
   try {
     localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
   } catch {
-    // storage full or unavailable — keep working in memory
+    // ignore
   }
 }
 
@@ -71,7 +72,9 @@ export function noteTitle(note: Note): string {
 }
 
 export function notePreview(note: Note, len = 120): string {
-  const body = note.title.trim() ? note.content.trim() : note.content.trimStart().split('\n').slice(1).join(' ').trim();
+  const body = note.title.trim()
+    ? note.content.trim()
+    : note.content.trimStart().split('\n').slice(1).join(' ').trim();
   const src = body || note.content.trim();
   return src.length > len ? src.slice(0, len) + '…' : src;
 }
@@ -85,6 +88,6 @@ export function formatDateTime(ts: number): string {
   const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   if (sameDay) return `Сегодня, ${time}`;
   if (d.toDateString() === yesterday.toDateString()) return `Вчера, ${time}`;
-  const date = d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' });
+  const date = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   return `${date}, ${time}`;
 }

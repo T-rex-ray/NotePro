@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ClipboardList, FileText, Moon, Plus, Search, Sun, X } from 'lucide-react';
 import { formatDateTime, notePreview, noteTitle, type Note } from '../lib/notes';
+import NoteContextMenu, { type ContextAction } from './NoteContextMenu';
 
 interface NotesListProps {
   notes: Note[];
@@ -10,7 +11,10 @@ interface NotesListProps {
   onCreate: () => void;
   onToggleTheme: () => void;
   onChangeStartupMode: (mode: 'quick' | 'list') => void;
+  onDelete?: (id: string) => void;
 }
+
+const LONG_PRESS_MS = 450;
 
 export default function NotesList({
   notes,
@@ -20,8 +24,33 @@ export default function NotesList({
   onCreate,
   onToggleTheme,
   onChangeStartupMode,
+  onDelete,
 }: NotesListProps) {
   const [query, setQuery] = useState('');
+  const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Рефы для точного определения долгого нажатия без ложных срабатываний при прокрутке
+  const timerRef = useRef<number | null>(null);
+  const startPosRef = useRef<{ x: number; y: number } | null>(null);
+  const longPressedRef = useRef(false);
+
+  const clearPressTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => clearPressTimer();
+  }, [clearPressTimer]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 2000);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -32,6 +61,89 @@ export default function NotesList({
         n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)
     );
   }, [notes, query]);
+
+  const handleTouchStart = (id: string, e: React.TouchEvent | React.MouseEvent) => {
+    longPressedRef.current = false;
+    clearPressTimer();
+
+    if ('touches' in e && e.touches.length > 0) {
+      startPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if ('clientX' in e) {
+      startPosRef.current = { x: e.clientX, y: e.clientY };
+    }
+
+    timerRef.current = window.setTimeout(() => {
+      longPressedRef.current = true;
+      setMenuNoteId(id);
+      if (navigator.vibrate) {
+        navigator.vibrate(25);
+      }
+    }, LONG_PRESS_MS);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!startPosRef.current || timerRef.current === null) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const dx = Math.abs(touch.clientX - startPosRef.current.x);
+    const dy = Math.abs(touch.clientY - startPosRef.current.y);
+    // Если палец сдвинулся больше чем на 10px — пользователь листает список, отменяем меню
+    if (dx > 10 || dy > 10) {
+      clearPressTimer();
+    }
+  };
+
+  const handleCardClick = (id: string) => {
+    clearPressTimer();
+    if (longPressedRef.current) {
+      longPressedRef.current = false;
+      return;
+    }
+    onOpen(id);
+  };
+
+  const handleMenuAction = async (action: ContextAction, note: Note) => {
+    setMenuNoteId(null);
+
+    if (action === 'share') {
+      const text = note.title.trim() ? `${note.title.trim()}\n\n${note.content}` : note.content;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: noteTitle(note), text });
+        } else {
+          await navigator.clipboard.writeText(text);
+          setToast('Скопировано в буфер обмена');
+        }
+      } catch {
+        // отменено пользователем
+      }
+      return;
+    }
+
+    if (action === 'delete' && onDelete) {
+      onDelete(note.id);
+      return;
+    }
+
+    const names: Record<ContextAction, string> = {
+      select: 'Отметить',
+      duplicate: 'Дублировать',
+      pin: 'Закрепить сверху',
+      share: 'Отправить',
+      lock: 'Заблокировать',
+      archive: 'Архивировать',
+      delete: 'Удалить',
+      color: 'Цвет карточки',
+      remind: 'Напоминание',
+      pdf: 'Экспорт в PDF',
+    };
+    setToast(`Функция «${names[action]}» — добавим следующим шагом`);
+  };
+
+  const activeMenuNote = useMemo(
+    () => notes.find((n) => n.id === menuNoteId) ?? null,
+    [notes, menuNoteId]
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
@@ -99,28 +211,43 @@ export default function NotesList({
           </div>
         ) : (
           <ul className="space-y-2">
-            {filtered.map((n) => (
-              <li key={n.id}>
-                <button
-                  onClick={() => onOpen(n.id)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-teal-300 hover:shadow-md active:scale-[0.99] dark:border-slate-700 dark:bg-slate-800 dark:hover:border-teal-600"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="line-clamp-1 font-semibold text-slate-900 dark:text-slate-100">
-                      {noteTitle(n)}
-                    </h2>
-                    <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">
-                      {formatDateTime(n.updatedAt)}
-                    </span>
-                  </div>
-                  {notePreview(n) && (
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
-                      {notePreview(n)}
-                    </p>
-                  )}
-                </button>
-              </li>
-            ))}
+            {filtered.map((n) => {
+              const isSelected = n.id === menuNoteId;
+              return (
+                <li key={n.id}>
+                  <button
+                    onTouchStart={(e) => handleTouchStart(n.id, e)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={clearPressTimer}
+                    onTouchCancel={clearPressTimer}
+                    onMouseDown={(e) => handleTouchStart(n.id, e)}
+                    onMouseUp={clearPressTimer}
+                    onMouseLeave={clearPressTimer}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onClick={() => handleCardClick(n.id)}
+                    className={`w-full select-none rounded-2xl border p-4 text-left shadow-sm transition active:scale-[0.99] ${
+                      isSelected
+                        ? 'border-teal-500 bg-teal-50/70 ring-2 ring-teal-500/30 dark:border-teal-400 dark:bg-teal-950/40'
+                        : 'border-slate-200 bg-white hover:border-teal-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-teal-600'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h2 className="line-clamp-1 font-semibold text-slate-900 dark:text-slate-100">
+                        {noteTitle(n)}
+                      </h2>
+                      <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">
+                        {formatDateTime(n.updatedAt)}
+                      </span>
+                    </div>
+                    {notePreview(n) && (
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
+                        {notePreview(n)}
+                      </p>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </main>
@@ -133,6 +260,9 @@ export default function NotesList({
       >
         <Plus size={26} />
       </button>
-    </div>
-  );
-}
+
+      {/* Двухрядная панель действий по удержанию */}
+      <NoteContextMenu
+        note={activeMenuNote}
+        onClose={() => setMenuNoteId(null)}
+        onAction={handleMenuAction}

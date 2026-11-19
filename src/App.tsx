@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Editor from './components/Editor';
 import NotesList from './components/NotesList';
-import ConfirmDialog from './components/ConfirmDialog';
 import {
   loadNotes,
   loadSettings,
   makeNote,
-  noteTitle,
   saveNotes,
   saveSettings,
   type Note,
@@ -22,7 +20,6 @@ export default function App() {
     loadSettings().startupMode === 'list' ? 'list' : 'edit'
   );
   const [activeId, setActiveIdState] = useState<string | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [savedJustNow, setSavedJustNow] = useState(false);
 
   const screenRef = useRef(screen);
@@ -42,8 +39,6 @@ export default function App() {
     setActiveIdState(id);
   }, []);
 
-  // Создаем 2 уровня истории (view -> edit) при первом касании экрана или вводе текста,
-  // чтобы Chrome на Android гарантированно разрешил перехват двух нажатий "Назад"
   const armHistory = useCallback(() => {
     if (historyArmedRef.current) return;
     const current = screenRef.current;
@@ -71,18 +66,20 @@ export default function App() {
     document.documentElement.classList.toggle('dark', settings.theme === 'dark');
   }, [settings]);
 
-  // Активируем стек истории при первом касании или нажатии клавиши
   useEffect(() => {
     const onInteract = () => armHistory();
     window.addEventListener('pointerdown', onInteract, { passive: true });
+    window.addEventListener('touchstart', onInteract, { passive: true });
+    window.addEventListener('focusin', onInteract, { passive: true });
     window.addEventListener('keydown', onInteract, { passive: true });
     return () => {
       window.removeEventListener('pointerdown', onInteract);
+      window.removeEventListener('touchstart', onInteract);
+      window.removeEventListener('focusin', onInteract);
       window.removeEventListener('keydown', onInteract);
     };
   }, [armHistory]);
 
-  // Пошаговый возврат: 1) edit -> view, 2) view -> list, 3) list -> свернуть приложение
   useEffect(() => {
     const blurActive = () => {
       (document.activeElement as HTMLElement | null)?.blur?.();
@@ -96,6 +93,7 @@ export default function App() {
       applyActiveId(null);
       applyScreen('list');
       historyArmedRef.current = false;
+      history.replaceState({ screen: 'list' }, '');
     };
 
     const onPopState = () => {
@@ -106,32 +104,26 @@ export default function App() {
         const note = notesRef.current.find((n) => n.id === id);
         const isEmpty = !note || (!note.title.trim() && !note.content.trim());
 
-        // Если заметка пустая — удаляем черновик и сразу идем в список
         if (isEmpty) {
           goList(id);
           return;
         }
 
-        // Шаг 1: выходим из редактирования, остается режим просмотра
         blurActive();
         applyScreen('view');
         return;
       }
 
       if (currentScreen === 'view') {
-        // Шаг 2: из просмотра возвращаемся к списку заметок
         goList(null);
         return;
       }
-
-      // Шаг 3: на списке (list) не перехватываем — ОС сворачивает блокнот
     };
 
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, [applyActiveId, applyScreen]);
 
-  // Начальный запуск приложения
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
@@ -161,7 +153,6 @@ export default function App() {
     [armHistory]
   );
 
-  // Кнопка "Мои заметки" в верхней панели (быстрый выход сразу к списку)
   const exitToList = useCallback(() => {
     const id = activeIdRef.current;
     const note = notesRef.current.find((n) => n.id === id);
@@ -206,18 +197,44 @@ export default function App() {
     history.pushState({ screen: 'edit', id }, '');
   }, [applyScreen]);
 
-  const requestDelete = useCallback((id: string) => setPendingDeleteId(id), []);
+  // Перемещение заметки в корзину
+  const moveToTrash = useCallback(
+    (id: string) => {
+      const target = notesRef.current.find((n) => n.id === id);
+      const isEmpty = !target || (!target.title.trim() && !target.content.trim());
 
-  const confirmDelete = useCallback(() => {
-    if (!pendingDeleteId) return;
-    const id = pendingDeleteId;
-    setPendingDeleteId(null);
+      if (isEmpty) {
+        setNotes((p) => p.filter((n) => n.id !== id));
+      } else {
+        setNotes((p) =>
+          p.map((n) => (n.id === id ? { ...n, deletedAt: Date.now() } : n))
+        );
+      }
+
+      if (activeIdRef.current === id) {
+        (document.activeElement as HTMLElement | null)?.blur?.();
+        applyActiveId(null);
+        applyScreen('list');
+        historyArmedRef.current = false;
+        history.replaceState({ screen: 'list' }, '');
+      }
+    },
+    [applyActiveId, applyScreen]
+  );
+
+  const restoreNote = useCallback((id: string) => {
+    setNotes((p) =>
+      p.map((n) => (n.id === id ? { ...n, deletedAt: undefined, updatedAt: Date.now() } : n))
+    );
+  }, []);
+
+  const deleteForever = useCallback((id: string) => {
     setNotes((p) => p.filter((n) => n.id !== id));
-    applyActiveId(null);
-    applyScreen('list');
-    historyArmedRef.current = false;
-    history.replaceState({ screen: 'list' }, '');
-  }, [pendingDeleteId, applyActiveId, applyScreen]);
+  }, []);
+
+  const emptyTrash = useCallback(() => {
+    setNotes((p) => p.filter((n) => !n.deletedAt));
+  }, []);
 
   const toggleTheme = useCallback(() => {
     setSettings((s) => ({ ...s, theme: s.theme === 'dark' ? 'light' : 'dark' }));
@@ -227,15 +244,23 @@ export default function App() {
     setSettings((s) => ({ ...s, startupMode: mode }));
   }, []);
 
-  const pendingDeleteNote = notes.find((n) => n.id === pendingDeleteId) ?? null;
-  const activeNote = notes.find((n) => n.id === activeId) ?? null;
+  const activeNotes = useMemo(() => notes.filter((n) => !n.deletedAt), [notes]);
+  const trashedNotes = useMemo(
+    () =>
+      notes
+        .filter((n) => !!n.deletedAt)
+        .sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)),
+    [notes]
+  );
+
+  const activeNote = activeNotes.find((n) => n.id === activeId) ?? null;
 
   return (
     <div className="h-[100dvh] w-full overflow-hidden font-sans">
       {(screen === 'edit' || screen === 'view') && activeNote && (
         <Editor
           note={activeNote}
-          notesCount={notes.filter((n) => n.title.trim() || n.content.trim()).length}
+          notesCount={activeNotes.filter((n) => n.title.trim() || n.content.trim()).length}
           dark={settings.theme === 'dark'}
           savedJustNow={savedJustNow}
           viewing={screen === 'view'}
@@ -243,7 +268,7 @@ export default function App() {
           onOpenList={exitToList}
           onStartEdit={startEditing}
           onChange={(patch) => updateNote(activeNote.id, patch)}
-          onDelete={requestDelete}
+          onDelete={moveToTrash}
           onToggleTheme={toggleTheme}
         />
       )}
@@ -256,29 +281,20 @@ export default function App() {
 
       {screen === 'list' && (
         <NotesList
-          notes={notes}
+          notes={activeNotes}
+          trashedNotes={trashedNotes}
           dark={settings.theme === 'dark'}
           startupMode={settings.startupMode}
           onOpen={openNote}
           onCreate={createNote}
           onToggleTheme={toggleTheme}
           onChangeStartupMode={changeStartupMode}
+          onMoveToTrash={moveToTrash}
+          onRestoreNote={restoreNote}
+          onDeleteForever={deleteForever}
+          onEmptyTrash={emptyTrash}
         />
       )}
-
-      <ConfirmDialog
-        open={!!pendingDeleteNote}
-        title="Удалить заметку?"
-        message={
-          pendingDeleteNote
-            ? `«${noteTitle(pendingDeleteNote)}» будет удалена безвозвратно.`
-            : ''
-        }
-        confirmLabel="Удалить"
-        cancelLabel="Отмена"
-        onConfirm={confirmDelete}
-        onCancel={() => setPendingDeleteId(null)}
-      />
     </div>
   );
 }

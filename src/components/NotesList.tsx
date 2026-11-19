@@ -1,32 +1,42 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ClipboardList, FileText, Moon, Plus, Search, Sun, X } from 'lucide-react';
+import { ClipboardList, FileText, Moon, Plus, Search, Settings, Sun, X } from 'lucide-react';
 import { noteTitle, type Note } from '../lib/notes';
 import NoteCard from './NoteCard';
 import NoteContextMenu, { type ContextAction } from './NoteContextMenu';
+import SettingsModal from './SettingsModal';
 
 interface NotesListProps {
   notes: Note[];
+  trashedNotes: Note[];
   dark: boolean;
   startupMode: 'quick' | 'list';
   onOpen: (id: string) => void;
   onCreate: () => void;
   onToggleTheme: () => void;
   onChangeStartupMode: (mode: 'quick' | 'list') => void;
-  onDelete?: (id: string) => void;
+  onMoveToTrash: (id: string) => void;
+  onRestoreNote: (id: string) => void;
+  onDeleteForever: (id: string) => void;
+  onEmptyTrash: () => void;
 }
 
 export default function NotesList({
   notes,
+  trashedNotes,
   dark,
   startupMode,
   onOpen,
   onCreate,
   onToggleTheme,
   onChangeStartupMode,
-  onDelete,
+  onMoveToTrash,
+  onRestoreNote,
+  onDeleteForever,
+  onEmptyTrash,
 }: NotesListProps) {
   const [query, setQuery] = useState('');
   const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState('');
 
   useEffect(() => {
@@ -60,8 +70,9 @@ export default function NotesList({
       }
       return;
     }
-    if (action === 'delete' && onDelete) {
-      onDelete(note.id);
+    if (action === 'delete') {
+      onMoveToTrash(note.id);
+      setToast('Заметка перемещена в корзину');
       return;
     }
     setToast('Функция будет добавлена следующим шагом');
@@ -80,13 +91,22 @@ export default function NotesList({
       >
         <div className="flex items-center justify-between pb-2">
           <h1 className="text-xl font-bold">Мои заметки</h1>
-          <button
-            onClick={onToggleTheme}
-            aria-label={dark ? 'Светлая тема' : 'Тёмная тема'}
-            className="rounded-full p-2.5 text-slate-600 transition hover:bg-slate-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            {dark ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onToggleTheme}
+              aria-label={dark ? 'Светлая тема' : 'Тёмная тема'}
+              className="rounded-full p-2.5 text-slate-600 transition hover:bg-slate-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              {dark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Настройки"
+              className="relative rounded-full p-2.5 text-slate-600 transition hover:bg-slate-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <Settings size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="relative pb-2">
@@ -163,6 +183,17 @@ export default function NotesList({
         note={activeMenuNote}
         onClose={() => setMenuNoteId(null)}
         onAction={handleMenuAction}
+      />
+
+      <SettingsModal
+        open={settingsOpen}
+        trashedNotes={trashedNotes}
+        startupMode={startupMode}
+        onClose={() => setSettingsOpen(false)}
+        onChangeStartupMode={onChangeStartupMode}
+        onRestoreNote={onRestoreNote}
+        onDeleteForever={onDeleteForever}
+        onEmptyTrash={onEmptyTrash}
       />
 
       {toast && (

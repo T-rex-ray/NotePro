@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, List, Moon, Pencil, Share2, Sun, Trash2 } from 'lucide-react';
 import { formatDateTime, type Note } from '../lib/notes';
-
 interface EditorProps {
   note: Note;
   notesCount: number;
@@ -15,7 +14,6 @@ interface EditorProps {
   onDelete: (id: string) => void;
   onToggleTheme: () => void;
 }
-
 export default function Editor({
   note,
   notesCount,
@@ -33,8 +31,6 @@ export default function Editor({
   const lastTapRef = useRef(0);
   const [toast, setToast] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  // При входе в редактирование ставим фокус и курсор в конец текста
   useEffect(() => {
     if (viewing) return;
     const el = contentRef.current;
@@ -44,10 +40,8 @@ export default function Editor({
       el.setSelectionRange(end, end);
     }
   }, [note.id, viewing]);
-
   const handleMainClick = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      // В режиме просмотра оставляем двойной тап для перехода в редактирование
       if (viewing) {
         const now = Date.now();
         if (now - lastTapRef.current < 300) {
@@ -58,8 +52,6 @@ export default function Editor({
         }
         return;
       }
-
-      // В режиме редактирования тап по любому пустому месту экрана фокусирует поле ввода и открывает клавиатуру
       if (e.target === e.currentTarget) {
         const el = contentRef.current;
         if (el) {
@@ -71,15 +63,12 @@ export default function Editor({
     },
     [viewing, onStartEdit]
   );
-
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 2200);
     return () => clearTimeout(t);
   }, [toast]);
-
   const charCount = useMemo(() => note.content.length, [note.content]);
-
   const share = useCallback(async () => {
     const text = note.title.trim()
       ? `${note.title.trim()}\n\n${note.content}`
@@ -94,10 +83,9 @@ export default function Editor({
         setToast('Текст скопирован в буфер обмена');
       }
     } catch {
-      // пользователь отменил отправку
+      // ignore
     }
   }, [note.title, note.content]);
-
   return (
     <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <header
@@ -154,7 +142,6 @@ export default function Editor({
           </button>
         </div>
       </header>
-
       <main
         className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-3 pb-6"
         onClick={handleMainClick}
@@ -172,7 +159,7 @@ export default function Editor({
           onChange={(e) => onChange({ title: e.target.value })}
           placeholder="Заголовок (необязательно)"
         />
-        <div className="mt-1 shrink-0 pb-2 text-xs text-slate-400 dark:text-slate-500">
+        <div className="mt-1 mb-3 shrink-0 border-b border-slate-200 pb-2.5 text-xs text-slate-400 dark:border-slate-700/80 dark:text-slate-500">
           Изменено: {formatDateTime(note.updatedAt)}
         </div>
         <textarea
@@ -189,7 +176,6 @@ export default function Editor({
           placeholder="Начните писать…"
         />
       </main>
-
       <footer className="sticky bottom-0 flex items-center justify-between border-t border-slate-200 bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 text-xs text-slate-500 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400">
         {viewing ? (
           <span>Режим просмотра</span>
@@ -207,12 +193,9 @@ export default function Editor({
           </>
         )}
       </footer>
-
       {toast && (
         <div className="pointer-events-none fixed inset-x-0 bottom-20 z-30 flex justify-center px-6">
-          <div className="rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg dark:bg-slate-700">
-            {toast}
-          </div>
+          <span className="rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg">{toast}</span>
         </div>
       )}
     </div>

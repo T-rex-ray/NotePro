@@ -16,9 +16,7 @@ type Screen = 'list' | 'view' | 'edit';
 export default function App() {
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
   const [notes, setNotes] = useState<Note[]>(() => loadNotes());
-  const [screen, setScreenState] = useState<Screen>(() =>
-    loadSettings().startupMode === 'list' ? 'list' : 'edit'
-  );
+  const [screen, setScreenState] = useState<Screen>('list');
   const [activeId, setActiveIdState] = useState<string | null>(null);
   const [savedJustNow, setSavedJustNow] = useState(false);
 
@@ -127,18 +125,8 @@ export default function App() {
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
-
-    if (screenRef.current === 'edit') {
-      const draft = makeNote();
-      setNotes((p) => [draft, ...p]);
-      applyActiveId(draft.id);
-      history.replaceState({ screen: 'list' }, '');
-      history.pushState({ screen: 'view', id: draft.id }, '');
-      history.pushState({ screen: 'edit', id: draft.id }, '');
-    } else {
-      history.replaceState({ screen: 'list' }, '');
-    }
-  }, [applyActiveId]);
+    history.replaceState({ screen: 'list' }, '');
+  }, []);
 
   const updateNote = useCallback(
     (id: string, patch: Partial<Note>) => {
@@ -197,7 +185,6 @@ export default function App() {
     history.pushState({ screen: 'edit', id }, '');
   }, [applyScreen]);
 
-  // Перемещение заметки в корзину
   const moveToTrash = useCallback(
     (id: string) => {
       const target = notesRef.current.find((n) => n.id === id);

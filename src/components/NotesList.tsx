@@ -216,11 +216,11 @@ export default function NotesList({
           <button
             onClick={onCreate}
             aria-label="Новая заметка"
-            className="fixed bottom-24 right-4 z-20 flex h-14 items-center gap-2 rounded-full bg-teal-600 px-5 text-white shadow-lg shadow-teal-600/30 transition hover:bg-teal-700 active:scale-95"
+            className="fixed bottom-24 right-4 z-20 flex h-16 items-center gap-2.5 rounded-full bg-teal-600 px-6 text-white shadow-lg shadow-teal-600/30 transition hover:bg-teal-700 active:scale-95"
             style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
           >
-            <FileText size={20} strokeWidth={2.2} />
-            <Plus size={22} strokeWidth={2.6} />
+            <Plus size={25} strokeWidth={2.6} />
+            <FileText size={23} strokeWidth={2.1} />
           </button>
           <BottomNavBar
             activeTab={activeTab}

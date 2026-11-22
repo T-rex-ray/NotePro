@@ -15,10 +15,7 @@ const OPTIONS: { id: EditorOptionAction; label: string; icon: typeof Lock }[] = 
 export default function EditorOptionsBar({ open, onAction }: EditorOptionsBarProps) {
   if (!open) return null;
   return (
-    <div
-      style={{ WebkitBackdropFilter: 'blur(2px)', backdropFilter: 'blur(2px)' }}
-      className="absolute inset-x-3 top-2 z-20 rounded-2xl border border-slate-400/35 bg-white/15 p-1.5 shadow-[0_6px_20px_rgba(15,23,42,0.08)] transition-all dark:border-slate-500/35 dark:bg-slate-900/20 dark:shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
-    >
+    <div className="absolute inset-x-3 top-2 z-20 rounded-2xl border border-slate-400/50 bg-transparent p-1.5 transition-all dark:border-slate-500/50">
       <div className="grid grid-cols-6 gap-0.5">
         {OPTIONS.map(({ id, label, icon: Icon }) => (
           <button

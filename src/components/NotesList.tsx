@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ClipboardList, FileText, Moon, Plus, Search, Settings, Sun, X } from 'lucide-react';
+import { FileText, Moon, Plus, Search, Settings, Sun, X } from 'lucide-react';
 import { noteTitle, type Note } from '../lib/notes';
 import NoteCard from './NoteCard';
 import NoteContextMenu, { type ContextAction } from './NoteContextMenu';
+import QuickComposeBar from './QuickComposeBar';
 import SettingsModal from './SettingsModal';
 
 interface NotesListProps {
@@ -38,8 +39,13 @@ export default function NotesList({
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [barCollapsed, setBarCollapsed] = useState(false);
   const [toast, setToast] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setBarCollapsed(startupMode === 'list');
+  }, [startupMode]);
 
   useEffect(() => {
     if (!toast) return;
@@ -96,6 +102,8 @@ export default function NotesList({
     [notes, menuNoteId]
   );
 
+  const showQuickBar = startupMode === 'quick' && !barCollapsed;
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <header
@@ -103,12 +111,14 @@ export default function NotesList({
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
       >
         <div className="flex items-center justify-between pb-2.5">
-          <h1
-            className="select-none text-3xl font-bold tracking-wide text-slate-900 dark:text-white"
-            style={{ fontFamily: "'Caveat', cursive" }}
-          >
-            MyNote<span className="text-teal-600 dark:text-teal-400">Pro</span>
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1
+              className="select-none text-3xl font-bold tracking-wide text-slate-900 dark:text-white"
+              style={{ fontFamily: "'Caveat', cursive" }}
+            >
+              MyNote<span className="text-teal-600 dark:text-teal-400">Pro</span>
+            </h1>
+          </div>
 
           <div className="flex items-center gap-0.5">
             <button
@@ -162,31 +172,37 @@ export default function NotesList({
             </button>
           </div>
         )}
-
-        <button
-          onClick={() => onChangeStartupMode(startupMode === 'quick' ? 'list' : 'quick')}
-          className="mb-3 flex w-full items-center justify-between rounded-xl bg-slate-100 px-4 py-2.5 text-sm transition hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
-        >
-          <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-            <ClipboardList size={16} />
-            Режим запуска
-          </span>
-          <span className="font-medium text-teal-700 dark:text-teal-300">
-            {startupMode === 'quick' ? 'Быстрая запись' : 'Список заметок'}
-          </span>
-        </button>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-3">
+      <main
+        onClick={(e) => {
+          if (showQuickBar && e.target === e.currentTarget) {
+            setBarCollapsed(true);
+          }
+        }}
+        className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 ${showQuickBar ? 'pb-36' : 'pb-24'}`}
+      >
         {filtered.length === 0 ? (
-          <div className="mt-16 flex flex-col items-center text-center text-slate-400 dark:text-slate-500">
+          <div
+            onClick={() => {
+              if (showQuickBar) setBarCollapsed(true);
+            }}
+            className="mt-16 flex flex-col items-center text-center text-slate-400 dark:text-slate-500"
+          >
             <FileText size={48} strokeWidth={1.5} />
             <p className="mt-4 text-sm">
-              {query ? 'Ничего не найдено' : 'Пока нет заметок.\nНажмите «+», чтобы создать первую.'}
+              {query ? 'Ничего не найдено' : 'Пока нет заметок.\nНажмите «+» или панель снизу, чтобы создать.'}
             </p>
           </div>
         ) : (
-          <ul className="space-y-2">
+          <ul
+            onClick={(e) => {
+              if (showQuickBar && e.target === e.currentTarget) {
+                setBarCollapsed(true);
+              }
+            }}
+            className="space-y-2"
+          >
             {filtered.map((n) => (
               <li key={n.id}>
                 <NoteCard
@@ -201,14 +217,18 @@ export default function NotesList({
         )}
       </main>
 
-      <button
-        onClick={onCreate}
-        aria-label="Новая заметка"
-        className="fixed bottom-6 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg shadow-teal-600/30 transition hover:bg-teal-700 active:scale-90"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <Plus size={26} />
-      </button>
+      {showQuickBar ? (
+        <QuickComposeBar onTapExpand={onCreate} />
+      ) : (
+        <button
+          onClick={onCreate}
+          aria-label="Новая заметка"
+          className="fixed bottom-6 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg shadow-teal-600/30 transition hover:bg-teal-700 active:scale-90"
+          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          <Plus size={26} />
+        </button>
+      )}
 
       <NoteContextMenu
         note={activeMenuNote}
@@ -228,7 +248,7 @@ export default function NotesList({
       />
 
       {toast && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center px-6">
+        <div className="pointer-events-none fixed inset-x-0 bottom-28 z-50 flex justify-center px-6">
           <span className="rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg">{toast}</span>
         </div>
       )}

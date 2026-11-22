@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Moon, Plus, Search, Settings, Sun, X } from 'lucide-react';
 import { noteTitle, type Note } from '../lib/notes';
-import ModeSwitchButton from './ModeSwitchButton';
+import BottomNavBar, { type BottomTab } from './BottomNavBar';
 import NoteCard from './NoteCard';
 import NoteContextMenu, { type ContextAction } from './NoteContextMenu';
 import QuickComposeBar from './QuickComposeBar';
@@ -36,6 +36,7 @@ export default function NotesList({
 }: NotesListProps) {
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<BottomTab>('notes');
   const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [barCollapsed, setBarCollapsed] = useState(false);
@@ -55,16 +56,40 @@ export default function NotesList({
   const closeSearch = () => {
     setQuery('');
     setSearchOpen(false);
+    setActiveTab('notes');
   };
   const toggleMode = () => {
     const next = startupMode === 'quick' ? 'list' : 'quick';
     setBarCollapsed(next === 'list');
     onChangeStartupMode(next);
-    setToast(next === 'quick' ? 'Режим: Быстрая панель' : 'Режим: Стандартный (+)');
+    setToast(next === 'quick' ? 'Режим: Быстрая панель' : 'Режим: Стандартный');
   };
   const collapseBar = () => {
     if (startupMode === 'quick' && !barCollapsed) {
       setBarCollapsed(true);
+    }
+  };
+  const handleBottomTab = (tab: BottomTab) => {
+    if (tab === 'notes') {
+      setActiveTab('notes');
+      if (searchOpen) closeSearch();
+      return;
+    }
+    if (tab === 'search') {
+      if (searchOpen) {
+        closeSearch();
+      } else {
+        setActiveTab('search');
+        setSearchOpen(true);
+      }
+      return;
+    }
+    if (tab === 'calendar') {
+      setToast('Календарь заметок — добавим следующим шагом');
+      return;
+    }
+    if (tab === 'menu') {
+      setSettingsOpen(true);
     }
   };
   const filtered = useMemo(() => {
@@ -110,27 +135,13 @@ export default function NotesList({
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
       >
         <div className="flex items-center justify-between pb-2.5">
-          <div className="flex items-center gap-2.5">
-            <h1
-              className="select-none text-3xl font-bold tracking-wide text-slate-900 dark:text-white"
-              style={{ fontFamily: "'Caveat', cursive" }}
-            >
-              MyNote<span className="text-teal-600 dark:text-teal-400">Pro</span>
-            </h1>
-            <ModeSwitchButton isQuick={startupMode === 'quick'} onToggle={toggleMode} />
-          </div>
+          <h1
+            className="select-none text-3xl font-bold tracking-wide text-slate-900 dark:text-white"
+            style={{ fontFamily: "'Caveat', cursive" }}
+          >
+            MyNote<span className="text-teal-600 dark:text-teal-400">Pro</span>
+          </h1>
           <div className="flex items-center gap-0.5">
-            <button
-              onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
-              aria-label="Поиск"
-              className={`rounded-full p-2.5 transition active:scale-95 ${
-                searchOpen
-                  ? 'bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400'
-                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-              }`}
-            >
-              <Search size={20} />
-            </button>
             <button
               onClick={onToggleTheme}
               aria-label={dark ? 'Светлая тема' : 'Тёмная тема'}
@@ -174,7 +185,7 @@ export default function NotesList({
       <main
         onTouchStart={collapseBar}
         onMouseDown={collapseBar}
-        className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 ${showQuickBar ? 'pb-48' : 'pb-24'}`}
+        className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 ${showQuickBar ? 'pb-48' : 'pb-36'}`}
       >
         {filtered.length === 0 ? (
           <div className="mt-16 flex flex-col items-center text-center text-slate-400 dark:text-slate-500">
@@ -201,14 +212,22 @@ export default function NotesList({
       {showQuickBar ? (
         <QuickComposeBar onTapExpand={onCreate} />
       ) : (
-        <button
-          onClick={onCreate}
-          aria-label="Новая заметка"
-          className="fixed bottom-6 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg shadow-teal-600/30 transition hover:bg-teal-700 active:scale-90"
-          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-        >
-          <Plus size={26} />
-        </button>
+        <>
+          <button
+            onClick={onCreate}
+            aria-label="Новая заметка"
+            className="fixed bottom-24 right-5 z-20 flex h-13 w-13 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg shadow-teal-600/30 transition hover:bg-teal-700 active:scale-90"
+            style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <Plus size={25} />
+          </button>
+          <BottomNavBar
+            activeTab={activeTab}
+            isQuick={startupMode === 'quick'}
+            onSelectTab={handleBottomTab}
+            onToggleMode={toggleMode}
+          />
+        </>
       )}
       <NoteContextMenu
         note={activeMenuNote}
@@ -225,11 +244,13 @@ export default function NotesList({
         onDeleteForever={onDeleteForever}
         onEmptyTrash={onEmptyTrash}
       />
-      {toast && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-28 z-50 flex justify-center px-6">
-          <span className="rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg">{toast}</span>
-        </div>
-      )}
+      <div
+        className={`pointer-events-none fixed inset-x-0 bottom-28 z-50 flex justify-center px-6 transition-opacity ${
+          toast ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        <span className="rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg">{toast}</span>
+      </div>
     </div>
   );
 }

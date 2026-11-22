@@ -8,7 +8,10 @@ import {
   saveNotes,
   saveSettings,
   type Note,
+  type NoteColor,
   type Settings,
+  type SortBy,
+  type ViewMode,
 } from './lib/notes';
 type Screen = 'list' | 'view' | 'edit';
 export default function App() {
@@ -68,36 +71,25 @@ export default function App() {
     };
   }, [armHistory]);
   useEffect(() => {
-    const blurActive = () => {
-      (document.activeElement as HTMLElement | null)?.blur?.();
-    };
+    const blur = () => (document.activeElement as HTMLElement | null)?.blur?.();
     const goList = (discardId: string | null) => {
-      if (discardId) {
-        setNotes((p) => p.filter((n) => n.id !== discardId));
-      }
-      blurActive();
+      if (discardId) setNotes((p) => p.filter((n) => n.id !== discardId));
+      blur();
       applyActiveId(null);
       applyScreen('list');
       historyArmedRef.current = false;
       history.replaceState({ screen: 'list' }, '');
     };
     const onPopState = () => {
-      const currentScreen = screenRef.current;
+      const cur = screenRef.current;
       const id = activeIdRef.current;
-      if (currentScreen === 'edit') {
+      if (cur === 'edit') {
         const note = notesRef.current.find((n) => n.id === id);
-        const isEmpty = !note || (!note.title.trim() && !note.content.trim());
-        if (isEmpty) {
-          goList(id);
-          return;
-        }
-        blurActive();
+        if (!note || (!note.title.trim() && !note.content.trim())) return goList(id);
+        blur();
         applyScreen('view');
-        return;
-      }
-      if (currentScreen === 'view') {
+      } else if (cur === 'view') {
         goList(null);
-        return;
       }
     };
     window.addEventListener('popstate', onPopState);
@@ -111,20 +103,20 @@ export default function App() {
   const updateNote = useCallback(
     (id: string, patch: Partial<Note>) => {
       armHistory();
-      setNotes((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n))
-      );
+      setNotes((p) => p.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n)));
       setSavedJustNow(true);
       if (savedTimer.current) window.clearTimeout(savedTimer.current);
       savedTimer.current = window.setTimeout(() => setSavedJustNow(false), 1200);
     },
     [armHistory]
   );
+  const setNoteColor = useCallback((id: string, color: NoteColor) => {
+    setNotes((p) => p.map((n) => (n.id === id ? { ...n, color } : n)));
+  }, []);
   const exitToList = useCallback(() => {
     const id = activeIdRef.current;
     const note = notesRef.current.find((n) => n.id === id);
-    const isEmpty = !note || (!note.title.trim() && !note.content.trim());
-    if (isEmpty && id) {
+    if ((!note || (!note.title.trim() && !note.content.trim())) && id) {
       setNotes((p) => p.filter((n) => n.id !== id));
     }
     (document.activeElement as HTMLElement | null)?.blur?.();
@@ -136,11 +128,7 @@ export default function App() {
   const finishEditing = useCallback(() => {
     const id = activeIdRef.current;
     const note = notesRef.current.find((n) => n.id === id);
-    const isEmpty = !note || (!note.title.trim() && !note.content.trim());
-    if (isEmpty) {
-      exitToList();
-      return;
-    }
+    if (!note || (!note.title.trim() && !note.content.trim())) return exitToList();
     (document.activeElement as HTMLElement | null)?.blur?.();
     applyScreen('view');
     history.replaceState({ screen: 'view', id }, '');
@@ -172,14 +160,11 @@ export default function App() {
   }, [applyScreen]);
   const moveToTrash = useCallback(
     (id: string) => {
-      const target = notesRef.current.find((n) => n.id === id);
-      const isEmpty = !target || (!target.title.trim() && !target.content.trim());
-      if (isEmpty) {
+      const t = notesRef.current.find((n) => n.id === id);
+      if (!t || (!t.title.trim() && !t.content.trim())) {
         setNotes((p) => p.filter((n) => n.id !== id));
       } else {
-        setNotes((p) =>
-          p.map((n) => (n.id === id ? { ...n, deletedAt: Date.now() } : n))
-        );
+        setNotes((p) => p.map((n) => (n.id === id ? { ...n, deletedAt: Date.now() } : n)));
       }
       if (activeIdRef.current === id) {
         (document.activeElement as HTMLElement | null)?.blur?.();
@@ -196,24 +181,20 @@ export default function App() {
       p.map((n) => (n.id === id ? { ...n, deletedAt: undefined, updatedAt: Date.now() } : n))
     );
   }, []);
-  const deleteForever = useCallback((id: string) => {
-    setNotes((p) => p.filter((n) => n.id !== id));
-  }, []);
-  const emptyTrash = useCallback(() => {
-    setNotes((p) => p.filter((n) => !n.deletedAt));
-  }, []);
-  const toggleTheme = useCallback(() => {
-    setSettings((s) => ({ ...s, theme: s.theme === 'dark' ? 'light' : 'dark' }));
-  }, []);
+  const deleteForever = useCallback((id: string) => setNotes((p) => p.filter((n) => n.id !== id)), []);
+  const emptyTrash = useCallback(() => setNotes((p) => p.filter((n) => !n.deletedAt)), []);
+  const toggleTheme = useCallback(
+    () => setSettings((s) => ({ ...s, theme: s.theme === 'dark' ? 'light' : 'dark' })),
+    []
+  );
   const changeStartupMode = useCallback((mode: 'quick' | 'list') => {
     setSettings((s) => ({ ...s, startupMode: mode }));
   }, []);
+  const changeSortBy = useCallback((sortBy: SortBy) => setSettings((s) => ({ ...s, sortBy })), []);
+  const changeViewMode = useCallback((viewMode: ViewMode) => setSettings((s) => ({ ...s, viewMode })), []);
   const activeNotes = useMemo(() => notes.filter((n) => !n.deletedAt), [notes]);
   const trashedNotes = useMemo(
-    () =>
-      notes
-        .filter((n) => !!n.deletedAt)
-        .sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)),
+    () => notes.filter((n) => !!n.deletedAt).sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)),
     [notes]
   );
   const activeNote = activeNotes.find((n) => n.id === activeId) ?? null;
@@ -235,21 +216,21 @@ export default function App() {
           onToggleTheme={toggleTheme}
         />
       )}
-      {(screen === 'edit' || screen === 'view') && !activeNote && (
-        <div className="flex h-full items-center justify-center bg-slate-50 text-slate-400 dark:bg-slate-900">
-          Открываю заметку…
-        </div>
-      )}
       {screen === 'list' && (
         <NotesList
           notes={activeNotes}
           trashedNotes={trashedNotes}
           dark={settings.theme === 'dark'}
           startupMode={settings.startupMode}
+          sortBy={settings.sortBy}
+          viewMode={settings.viewMode}
           onOpen={openNote}
           onCreate={createNote}
           onToggleTheme={toggleTheme}
           onChangeStartupMode={changeStartupMode}
+          onChangeSortBy={changeSortBy}
+          onChangeViewMode={changeViewMode}
+          onSetNoteColor={setNoteColor}
           onMoveToTrash={moveToTrash}
           onRestoreNote={restoreNote}
           onDeleteForever={deleteForever}

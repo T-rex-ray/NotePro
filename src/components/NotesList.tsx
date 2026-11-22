@@ -185,13 +185,13 @@ export default function NotesList({
       <main
         onTouchStart={collapseBar}
         onMouseDown={collapseBar}
-        className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 ${showQuickBar ? 'pb-48' : 'pb-36'}`}
+        className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 ${showQuickBar ? 'pb-48' : 'pb-40'}`}
       >
         {filtered.length === 0 ? (
           <div className="mt-16 flex flex-col items-center text-center text-slate-400 dark:text-slate-500">
             <FileText size={48} strokeWidth={1.5} />
             <p className="mt-4 text-sm">
-              {query ? 'Ничего не найдено' : 'Пока нет заметок.\nНажмите «+» или панель снизу, чтобы создать.'}
+              {query ? 'Ничего не найдено' : 'Пока нет заметок.\nНажмите кнопку снизу, чтобы создать.'}
             </p>
           </div>
         ) : (
@@ -216,10 +216,11 @@ export default function NotesList({
           <button
             onClick={onCreate}
             aria-label="Новая заметка"
-            className="fixed bottom-24 right-5 z-20 flex h-13 w-13 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg shadow-teal-600/30 transition hover:bg-teal-700 active:scale-90"
+            className="fixed bottom-24 right-4 z-20 flex h-14 items-center gap-2 rounded-full bg-teal-600 px-5 text-white shadow-lg shadow-teal-600/30 transition hover:bg-teal-700 active:scale-95"
             style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
           >
-            <Plus size={25} />
+            <FileText size={20} strokeWidth={2.2} />
+            <Plus size={22} strokeWidth={2.6} />
           </button>
           <BottomNavBar
             activeTab={activeTab}

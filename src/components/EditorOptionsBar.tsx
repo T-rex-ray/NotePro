@@ -15,7 +15,7 @@ const OPTIONS: { id: EditorOptionAction; label: string; icon: typeof Lock }[] = 
 export default function EditorOptionsBar({ open, onAction }: EditorOptionsBarProps) {
   if (!open) return null;
   return (
-    <div className="absolute inset-x-3 top-2 z-20 rounded-2xl border border-slate-400/50 bg-transparent p-1.5 transition-all dark:border-slate-500/50">
+    <div className="absolute inset-x-3 top-2 z-20 bg-transparent p-1.5 transition-all">
       <div className="grid grid-cols-6 gap-0.5">
         {OPTIONS.map(({ id, label, icon: Icon }) => (
           <button

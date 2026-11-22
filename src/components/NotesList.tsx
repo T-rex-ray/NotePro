@@ -58,8 +58,14 @@ export default function NotesList({
   };
   const toggleMode = () => {
     const next = startupMode === 'quick' ? 'list' : 'quick';
+    setBarCollapsed(next === 'list');
     onChangeStartupMode(next);
     setToast(next === 'quick' ? 'Режим: Быстрая панель' : 'Режим: Стандартный (+)');
+  };
+  const collapseBar = () => {
+    if (startupMode === 'quick' && !barCollapsed) {
+      setBarCollapsed(true);
+    }
   };
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -166,30 +172,19 @@ export default function NotesList({
         )}
       </header>
       <main
-        onClick={(e) => {
-          if (showQuickBar && e.target === e.currentTarget) setBarCollapsed(true);
-        }}
+        onTouchStart={collapseBar}
+        onMouseDown={collapseBar}
         className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 ${showQuickBar ? 'pb-48' : 'pb-24'}`}
       >
         {filtered.length === 0 ? (
-          <div
-            onClick={() => {
-              if (showQuickBar) setBarCollapsed(true);
-            }}
-            className="mt-16 flex flex-col items-center text-center text-slate-400 dark:text-slate-500"
-          >
+          <div className="mt-16 flex flex-col items-center text-center text-slate-400 dark:text-slate-500">
             <FileText size={48} strokeWidth={1.5} />
             <p className="mt-4 text-sm">
               {query ? 'Ничего не найдено' : 'Пока нет заметок.\nНажмите «+» или панель снизу, чтобы создать.'}
             </p>
           </div>
         ) : (
-          <ul
-            onClick={(e) => {
-              if (showQuickBar && e.target === e.currentTarget) setBarCollapsed(true);
-            }}
-            className="space-y-2"
-          >
+          <ul className="space-y-2">
             {filtered.map((n) => (
               <li key={n.id}>
                 <NoteCard

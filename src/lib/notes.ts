@@ -6,17 +6,13 @@ export interface Note {
   updatedAt: number;
   deletedAt?: number;
 }
-
 export interface Settings {
   startupMode: 'quick' | 'list';
   theme: 'light' | 'dark';
 }
-
 const NOTES_KEY = 'notepad.notes.v1';
 const SETTINGS_KEY = 'notepad.settings.v1';
-
 export const DEFAULT_SETTINGS: Settings = { startupMode: 'quick', theme: 'light' };
-
 function readJson<T>(key: string): T | null {
   try {
     const raw = localStorage.getItem(key);
@@ -25,7 +21,6 @@ function readJson<T>(key: string): T | null {
     return null;
   }
 }
-
 export function loadNotes(): Note[] {
   const notes = readJson<Note[]>(NOTES_KEY);
   if (!Array.isArray(notes)) return [];
@@ -33,7 +28,6 @@ export function loadNotes(): Note[] {
     (n) => n && typeof n.id === 'string' && typeof n.content === 'string'
   );
 }
-
 export function saveNotes(notes: Note[]): void {
   try {
     localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
@@ -41,7 +35,6 @@ export function saveNotes(notes: Note[]): void {
     // ignore
   }
 }
-
 export function loadSettings(): Settings {
   const s = readJson<Partial<Settings>>(SETTINGS_KEY);
   if (!s) return DEFAULT_SETTINGS;
@@ -50,7 +43,6 @@ export function loadSettings(): Settings {
     theme: s.theme === 'dark' ? 'dark' : 'light',
   };
 }
-
 export function saveSettings(settings: Settings): void {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -58,19 +50,16 @@ export function saveSettings(settings: Settings): void {
     // ignore
   }
 }
-
 export function makeNote(title = '', content = ''): Note {
   const now = Date.now();
   return { id: crypto.randomUUID(), title, content, createdAt: now, updatedAt: now };
 }
-
 export function noteTitle(note: Note): string {
   const t = note.title.trim();
   if (t) return t;
-  const first = note.content.trimStart().split('\n', 1)[0].trim();
+  const first = (note.content.trimStart().split('\n').shift() ?? '').trim();
   return first || 'Без заголовка';
 }
-
 export function notePreview(note: Note, len = 120): string {
   const body = note.title.trim()
     ? note.content.trim()
@@ -78,7 +67,6 @@ export function notePreview(note: Note, len = 120): string {
   const src = body || note.content.trim();
   return src.length > len ? src.slice(0, len) + '…' : src;
 }
-
 export function formatDateTime(ts: number): string {
   const d = new Date(ts);
   const now = new Date();

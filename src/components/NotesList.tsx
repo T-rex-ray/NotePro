@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Moon, Plus, Search, Settings, Sun, X } from 'lucide-react';
 import { noteTitle, type Note } from '../lib/notes';
+import ModeSwitchButton from './ModeSwitchButton';
 import NoteCard from './NoteCard';
 import NoteContextMenu, { type ContextAction } from './NoteContextMenu';
 import QuickComposeBar from './QuickComposeBar';
 import SettingsModal from './SettingsModal';
-
 interface NotesListProps {
   notes: Note[];
   trashedNotes: Note[];
@@ -20,7 +20,6 @@ interface NotesListProps {
   onDeleteForever: (id: string) => void;
   onEmptyTrash: () => void;
 }
-
 export default function NotesList({
   notes,
   trashedNotes,
@@ -42,28 +41,26 @@ export default function NotesList({
   const [barCollapsed, setBarCollapsed] = useState(false);
   const [toast, setToast] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     setBarCollapsed(startupMode === 'list');
   }, [startupMode]);
-
   useEffect(() => {
     if (!toast) return;
     const t = window.setTimeout(() => setToast(''), 2000);
     return () => window.clearTimeout(t);
   }, [toast]);
-
   useEffect(() => {
-    if (searchOpen) {
-      searchInputRef.current?.focus();
-    }
+    if (searchOpen) searchInputRef.current?.focus();
   }, [searchOpen]);
-
   const closeSearch = () => {
     setQuery('');
     setSearchOpen(false);
   };
-
+  const toggleMode = () => {
+    const next = startupMode === 'quick' ? 'list' : 'quick';
+    onChangeStartupMode(next);
+    setToast(next === 'quick' ? 'Режим: Быстрая панель' : 'Режим: Стандартный (+)');
+  };
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const sorted = [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
@@ -72,7 +69,6 @@ export default function NotesList({
       (n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)
     );
   }, [notes, query]);
-
   const handleMenuAction = async (action: ContextAction, note: Note) => {
     setMenuNoteId(null);
     if (action === 'share') {
@@ -96,14 +92,11 @@ export default function NotesList({
     }
     setToast('Функция будет добавлена следующим шагом');
   };
-
   const activeMenuNote = useMemo(
     () => notes.find((n) => n.id === menuNoteId) ?? null,
     [notes, menuNoteId]
   );
-
   const showQuickBar = startupMode === 'quick' && !barCollapsed;
-
   return (
     <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <header
@@ -111,15 +104,15 @@ export default function NotesList({
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
       >
         <div className="flex items-center justify-between pb-2.5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <h1
               className="select-none text-3xl font-bold tracking-wide text-slate-900 dark:text-white"
               style={{ fontFamily: "'Caveat', cursive" }}
             >
               MyNote<span className="text-teal-600 dark:text-teal-400">Pro</span>
             </h1>
+            <ModeSwitchButton isQuick={startupMode === 'quick'} onToggle={toggleMode} />
           </div>
-
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
@@ -148,7 +141,6 @@ export default function NotesList({
             </button>
           </div>
         </div>
-
         {searchOpen && (
           <div className="relative pb-2.5">
             <Search
@@ -173,14 +165,11 @@ export default function NotesList({
           </div>
         )}
       </header>
-
       <main
         onClick={(e) => {
-          if (showQuickBar && e.target === e.currentTarget) {
-            setBarCollapsed(true);
-          }
+          if (showQuickBar && e.target === e.currentTarget) setBarCollapsed(true);
         }}
-        className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 ${showQuickBar ? 'pb-36' : 'pb-24'}`}
+        className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 ${showQuickBar ? 'pb-48' : 'pb-24'}`}
       >
         {filtered.length === 0 ? (
           <div
@@ -197,9 +186,7 @@ export default function NotesList({
         ) : (
           <ul
             onClick={(e) => {
-              if (showQuickBar && e.target === e.currentTarget) {
-                setBarCollapsed(true);
-              }
+              if (showQuickBar && e.target === e.currentTarget) setBarCollapsed(true);
             }}
             className="space-y-2"
           >
@@ -216,7 +203,6 @@ export default function NotesList({
           </ul>
         )}
       </main>
-
       {showQuickBar ? (
         <QuickComposeBar onTapExpand={onCreate} />
       ) : (
@@ -229,13 +215,11 @@ export default function NotesList({
           <Plus size={26} />
         </button>
       )}
-
       <NoteContextMenu
         note={activeMenuNote}
         onClose={() => setMenuNoteId(null)}
         onAction={handleMenuAction}
       />
-
       <SettingsModal
         open={settingsOpen}
         trashedNotes={trashedNotes}
@@ -246,7 +230,6 @@ export default function NotesList({
         onDeleteForever={onDeleteForever}
         onEmptyTrash={onEmptyTrash}
       />
-
       {toast && (
         <div className="pointer-events-none fixed inset-x-0 bottom-28 z-50 flex justify-center px-6">
           <span className="rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg">{toast}</span>

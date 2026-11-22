@@ -35,7 +35,7 @@ export default function Editor({
   const [optionsOpen, setOptionsOpen] = useState(false);
   const defaultPlaceholder = useMemo(() => `Заметка ${Math.max(1, notesCount)}`, [notesCount]);
   const autoTitle = useMemo(() => {
-    const firstLine = note.content.trimStart().split('\n', 1)?.trim() ?? '';
+    const firstLine = (note.content.trimStart().split('\n').shift() ?? '').trim();
     return firstLine.length > 28 ? `${firstLine.slice(0, 28)}…` : firstLine;
   }, [note.content]);
   const displayTitle = note.title.trim() || autoTitle || defaultPlaceholder;

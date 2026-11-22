@@ -36,17 +36,17 @@ export default function EditorHeader({
         <button
           onClick={onBack}
           aria-label="Назад к списку"
-          className="shrink-0 rounded-full p-2.5 text-slate-600 transition hover:bg-slate-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800"
+          className="shrink-0 rounded-full p-2 text-slate-600 transition hover:bg-slate-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800"
         >
-          <ArrowLeft size={22} />
+          <ArrowLeft size={21} />
         </button>
       ) : (
         <button
           onClick={onFinishEdit}
           aria-label="Сохранить и завершить редактирование"
-          className="shrink-0 rounded-full bg-teal-600 p-2.5 text-white shadow-sm transition hover:bg-teal-700 active:scale-95"
+          className="shrink-0 rounded-full bg-teal-600 p-2 text-white shadow-sm transition hover:bg-teal-700 active:scale-95"
         >
-          <Check size={20} strokeWidth={2.5} />
+          <Check size={17} strokeWidth={2.5} />
         </button>
       )}
       <div className="min-w-0 flex-1">
@@ -69,9 +69,9 @@ export default function EditorHeader({
           <button
             onClick={onStartEdit}
             aria-label="Редактировать заметку"
-            className="rounded-full bg-teal-100 p-2.5 text-teal-700 transition hover:bg-teal-200 active:scale-95 dark:bg-teal-900 dark:text-teal-200 dark:hover:bg-teal-800"
+            className="rounded-full bg-teal-100 p-2 text-teal-700 transition hover:bg-teal-200 active:scale-95 dark:bg-teal-900 dark:text-teal-200 dark:hover:bg-teal-800"
           >
-            <Pencil size={19} />
+            <Pencil size={18} />
           </button>
         )}
         <button

@@ -165,13 +165,11 @@ export default function Editor({
         </div>
       </header>
       <main
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-2.5 pb-6"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-1.5 pb-6"
         onClick={handleMainClick}
       >
-        <div className="mb-3 flex shrink-0 items-center justify-between border-b border-slate-200 pb-2 text-xs text-slate-400 dark:border-slate-700/80 dark:text-slate-500">
-          <span className="font-medium text-teal-700/80 dark:text-teal-400/80">
-            {viewing ? 'Просмотр' : 'Редактирование'}
-          </span>
+        <div className="mb-1.5 flex shrink-0 items-center justify-between text-[10px] leading-none text-slate-400/80 dark:text-slate-500/80">
+          <span>{viewing ? 'Просмотр' : 'Редактирование'}</span>
           <span>{formatDateTime(note.updatedAt)}</span>
         </div>
         {viewing ? (

@@ -6,6 +6,7 @@ import NoteCard from './NoteCard';
 import { type ContextAction } from './NoteContextMenu';
 import NotesHeader from './NotesHeader';
 import NotesModals from './NotesModals';
+import NotesWallpaper from './NotesWallpaper';
 import QuickComposeBar from './QuickComposeBar';
 interface NotesListProps {
   notes: Note[];
@@ -92,9 +93,10 @@ export default function NotesList(p: NotesListProps) {
   const showQuickBar = p.startupMode === 'quick' && !barCollapsed;
   const gridClass = p.viewMode === 'grid' ? 'grid grid-cols-3 gap-2' : p.viewMode === 'large-grid' ? 'grid grid-cols-2 gap-2.5' : 'space-y-2';
   return (
-    <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div className="relative flex h-full min-h-0 flex-col bg-slate-100/80 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <NotesWallpaper />
       <NotesHeader dark={p.dark} searchOpen={searchOpen} query={query} sortBy={p.sortBy} colorFilter={colorFilter} onToggleTheme={p.onToggleTheme} onOpenSettings={() => setSettingsOpen(true)} onQueryChange={setQuery} onCloseSearch={closeSearch} onOpenSheet={() => setSheetOpen(true)} />
-      <main onTouchStart={collapseBar} onMouseDown={collapseBar} className={`min-h-0 flex-1 overflow-y-auto px-3 pt-1 ${showQuickBar ? 'pb-48' : 'pb-40'}`}>
+      <main onTouchStart={collapseBar} onMouseDown={collapseBar} className={`relative z-10 min-h-0 flex-1 overflow-y-auto px-3 pt-1 ${showQuickBar ? 'pb-48' : 'pb-40'}`}>
         {filtered.length === 0 ? (
           <div className="mt-16 flex flex-col items-center text-center text-slate-400 dark:text-slate-500">
             <FileText size={48} strokeWidth={1.5} />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { Check } from 'lucide-react';
 import {
   formatDateTime,
   NOTE_COLORS,
@@ -10,6 +11,7 @@ import {
 interface NoteCardProps {
   note: Note;
   selected: boolean;
+  multiSelectMode?: boolean;
   viewMode?: ViewMode;
   onOpen: (id: string) => void;
   onLongPress: (id: string) => void;
@@ -17,6 +19,7 @@ interface NoteCardProps {
 export default function NoteCard({
   note,
   selected,
+  multiSelectMode = false,
   viewMode = 'details',
   onOpen,
   onLongPress,
@@ -32,6 +35,7 @@ export default function NoteCard({
   }, []);
   useEffect(() => () => clearTimer(), [clearTimer]);
   const handleStart = (x: number, y: number) => {
+    if (multiSelectMode) return;
     longPressedRef.current = false;
     clearTimer();
     startPosRef.current = { x, y };
@@ -79,11 +83,22 @@ export default function NoteCard({
         isTile ? (viewMode === 'large-grid' ? 'flex h-40 flex-col p-3.5 pl-4' : 'flex h-28 flex-col p-2.5 pl-3.5') : isCompact ? 'py-3 pl-4 pr-3.5' : 'p-3.5 pl-4.5'
       } ${
         selected
-          ? 'border-teal-500 bg-teal-50/70 ring-2 ring-teal-500/30 dark:border-teal-400 dark:bg-teal-950/40'
+          ? 'border-teal-500 bg-teal-50/85 ring-2 ring-teal-500/35 dark:border-teal-400 dark:bg-teal-950/50'
           : 'border-slate-200 bg-white hover:border-teal-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:hover:border-teal-600'
       }`}
     >
       <span className={`absolute inset-y-0 left-0 w-1.5 ${colorObj.stripe}`} />
+      {multiSelectMode && (
+        <span
+          className={`absolute right-3 bottom-3 flex h-5 w-5 items-center justify-center rounded-full border transition ${
+            selected
+              ? 'border-teal-600 bg-teal-600 text-white'
+              : 'border-slate-300 bg-white/80 dark:border-slate-600 dark:bg-slate-900/80'
+          }`}
+        >
+          {selected && <Check size={12} strokeWidth={3} />}
+        </span>
+      )}
       {isTile ? (
         <>
           <h2 className="line-clamp-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -107,7 +122,7 @@ export default function NoteCard({
             </span>
           </div>
           {!isCompact && notePreview(note) && (
-            <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 line-clamp-2 pr-6 text-sm text-slate-500 dark:text-slate-400">
               {notePreview(note)}
             </p>
           )}

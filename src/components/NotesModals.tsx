@@ -4,7 +4,10 @@ import SettingsModal from './SettingsModal';
 import ViewSortSheet from './ViewSortSheet';
 interface NotesModalsProps {
   activeMenuNote: Note | null;
-  colorEditNote: Note | null;
+  selectedCount: number;
+  multiSelectMode: boolean;
+  colorEditActive: boolean;
+  currentEditColor: NoteColor;
   sheetOpen: boolean;
   settingsOpen: boolean;
   trashedNotes: Note[];
@@ -30,7 +33,13 @@ interface NotesModalsProps {
 export default function NotesModals(p: NotesModalsProps) {
   return (
     <>
-      <NoteContextMenu note={p.activeMenuNote} onClose={p.onCloseMenu} onAction={p.onMenuAction} />
+      <NoteContextMenu
+        note={p.activeMenuNote}
+        selectedCount={p.selectedCount}
+        multiSelectMode={p.multiSelectMode}
+        onClose={p.onCloseMenu}
+        onAction={p.onMenuAction}
+      />
       <ViewSortSheet
         open={p.sheetOpen}
         selectedColor={p.colorFilter}
@@ -42,9 +51,9 @@ export default function NotesModals(p: NotesModalsProps) {
         onSelectView={p.onChangeViewMode}
       />
       <ViewSortSheet
-        open={!!p.colorEditNote}
+        open={p.colorEditActive}
         colorPickerOnly
-        selectedColor={p.colorEditNote?.color ?? 'default'}
+        selectedColor={p.currentEditColor}
         sortBy={p.sortBy}
         viewMode={p.viewMode}
         onClose={p.onCloseColorEdit}
@@ -62,7 +71,7 @@ export default function NotesModals(p: NotesModalsProps) {
         onDeleteForever={p.onDeleteForever}
         onEmptyTrash={p.onEmptyTrash}
       />
-      <div className={`pointer-events-none fixed inset-x-0 bottom-28 z-50 flex justify-center px-6 transition-opacity ${p.toast ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`pointer-events-none fixed inset-x-0 bottom-56 z-50 flex justify-center px-6 transition-opacity ${p.toast ? 'opacity-100' : 'opacity-0'}`}>
         <span className="rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg">{p.toast}</span>
       </div>
     </>

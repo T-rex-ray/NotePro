@@ -25,9 +25,9 @@ export default function NotesHeader(p: NotesHeaderProps) {
   useEffect(() => { if (p.searchOpen) inputRef.current?.focus(); }, [p.searchOpen]);
   const stripe = NOTE_COLORS.find((c) => c.id === p.colorFilter)?.stripe ?? '';
   return (
-    <header className="sticky top-0 z-10 bg-slate-50/90 pb-1 backdrop-blur dark:bg-slate-900/90">
+    <header className="sticky top-0 z-10 bg-transparent">
       <div
-        className="relative overflow-hidden rounded-b-xl border-b border-teal-200/70 bg-teal-100/75 px-4 pb-3 shadow-xs dark:border-teal-800/50 dark:bg-teal-950/75"
+        className="relative overflow-hidden rounded-b-xl border-b border-teal-200/70 bg-teal-100/85 px-4 pb-5 shadow-xs backdrop-blur dark:border-teal-800/50 dark:bg-teal-950/85"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
       >
         <svg
@@ -70,11 +70,11 @@ export default function NotesHeader(p: NotesHeaderProps) {
           </div>
         )}
       </div>
-      <div className="px-3">
-        <button type="button" onClick={p.onOpenSheet} className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-2xl bg-white/85 py-1.5 text-xs font-medium text-slate-500 shadow-xs transition hover:bg-white active:scale-[0.99] dark:bg-slate-800/75 dark:text-slate-400 dark:hover:bg-slate-800">
+      <div className="px-3 pt-1">
+        <button type="button" onClick={p.onOpenSheet} className="flex w-full items-center justify-center gap-1 rounded-xl bg-white/80 py-0.5 text-[11px] font-medium text-slate-500 backdrop-blur-xs transition hover:bg-white active:scale-[0.99] dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800">
           <span>{SORT_LABELS[p.sortBy]}</span>
-          {p.colorFilter !== 'all' && <span className={`h-2.5 w-2.5 rounded-full ${stripe}`} />}
-          <ChevronDown size={13} />
+          {p.colorFilter !== 'all' && <span className={`h-2 w-2 rounded-full ${stripe}`} />}
+          <ChevronDown size={12} />
         </button>
       </div>
     </header>

@@ -33,9 +33,25 @@ export default function Editor({
   const [toast, setToast] = useState('');
   const [copied, setCopied] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [kbOffset, setKbOffset] = useState(0);
   const [history, setHistory] = useState<string[]>([note.content]);
   const [histIdx, setHistIdx] = useState(0);
   const histTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const diff = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKbOffset(diff > 60 ? diff : 0);
+    };
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    onResize();
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+    };
+  }, []);
   useEffect(() => { setHistory([note.content]); setHistIdx(0); }, [note.id]);
   const handleContentChange = (val: string) => {
     onChange({ content: val });
@@ -125,7 +141,7 @@ export default function Editor({
     [note.title, note.content, displayTitle]
   );
   return (
-    <div className="flex h-full min-h-0 flex-col bg-teal-50/75 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <div style={{ paddingBottom: kbOffset }} className="flex h-full min-h-0 flex-col bg-teal-50/75 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <EditorHeader title={note.title} placeholder={viewing ? displayTitle : autoTitle || defaultPlaceholder} viewing={viewing} copied={copied} optionsOpen={optionsOpen} onBack={onBack} onFinishEdit={onFinishEdit} onStartEdit={onStartEdit} onTitleChange={(val) => onChange({ title: val })} onCopyAll={copyAll} onDelete={() => onDelete(note.id)} onToggleOptions={() => setOptionsOpen((v) => !v)} />
       <div className="relative flex min-h-0 flex-1 flex-col">
         <EditorOptionsBar open={optionsOpen} onAction={handleOptionAction} />
@@ -143,17 +159,17 @@ export default function Editor({
           )}
         </main>
       </div>
-      <footer className="sticky bottom-0 flex items-center justify-between border-t border-teal-200/60 bg-teal-50/95 px-4 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5 text-xs text-teal-800/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 dark:text-slate-400">
+      <footer className="sticky bottom-0 z-20 flex items-center justify-between border-t border-teal-200/60 bg-teal-50/95 px-4 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5 text-xs text-teal-800/70 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 dark:text-slate-400">
         <span>{charCount} симв.</span>
         {viewing ? (
           <span className="text-[11px] opacity-80">Двойной тап для правки</span>
         ) : (
           <>
             <div className="flex items-center gap-6">
-              <button type="button" onClick={handleUndo} disabled={!canUndo} aria-label="Отменить" className={`rounded-full p-1.5 transition ${canUndo ? 'text-teal-800 hover:bg-teal-200/50 active:scale-90 dark:text-teal-300 dark:hover:bg-slate-800' : 'opacity-30 text-teal-800/50 dark:text-slate-600'}`}>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={handleUndo} disabled={!canUndo} aria-label="Отменить" className={`rounded-full p-1.5 transition ${canUndo ? 'text-teal-800 hover:bg-teal-200/50 active:scale-90 dark:text-teal-300 dark:hover:bg-slate-800' : 'opacity-30 text-teal-800/50 dark:text-slate-600'}`}>
                 <Undo2 size={20} strokeWidth={2.2} />
               </button>
-              <button type="button" onClick={handleRedo} disabled={!canRedo} aria-label="Повторить" className={`rounded-full p-1.5 transition ${canRedo ? 'text-teal-800 hover:bg-teal-200/50 active:scale-90 dark:text-teal-300 dark:hover:bg-slate-800' : 'opacity-30 text-teal-800/50 dark:text-slate-600'}`}>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={handleRedo} disabled={!canRedo} aria-label="Повторить" className={`rounded-full p-1.5 transition ${canRedo ? 'text-teal-800 hover:bg-teal-200/50 active:scale-90 dark:text-teal-300 dark:hover:bg-slate-800' : 'opacity-30 text-teal-800/50 dark:text-slate-600'}`}>
                 <Redo2 size={20} strokeWidth={2.2} />
               </button>
             </div>

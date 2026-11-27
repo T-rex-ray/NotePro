@@ -122,8 +122,8 @@ export default function NotesList(p: NotesListProps) {
   };
   const showQuickBar = p.startupMode === 'quick' && !barCollapsed;
   const gridClass = p.viewMode === 'grid' ? 'grid grid-cols-3 gap-2' : p.viewMode === 'large-grid' ? 'grid grid-cols-2 gap-2.5' : 'space-y-2';
-  const activeMenuNote = p.notes.find((n) => n.id === selectedIds) ?? null;
-  const firstColorNote = p.notes.find((n) => n.id === colorEditIds);
+  const activeMenuNote = p.notes.find((n) => n.id === selectedIds.at(0)) ?? null;
+  const firstColorNote = p.notes.find((n) => n.id === colorEditIds.at(0));
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-slate-100/80 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <NotesWallpaper />

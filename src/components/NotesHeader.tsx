@@ -27,7 +27,7 @@ export default function NotesHeader(p: NotesHeaderProps) {
   return (
     <header className="sticky top-0 z-10 bg-slate-50/90 pb-1 backdrop-blur dark:bg-slate-900/90">
       <div
-        className="relative overflow-hidden rounded-b-3xl border-b border-teal-200/70 bg-teal-100/75 px-4 pb-3 shadow-xs dark:border-teal-800/50 dark:bg-teal-950/75"
+        className="relative overflow-hidden rounded-b-xl border-b border-teal-200/70 bg-teal-100/75 px-4 pb-3 shadow-xs dark:border-teal-800/50 dark:bg-teal-950/75"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
       >
         <svg

@@ -32,33 +32,15 @@ export default function NotesHeader(p: NotesHeaderProps) {
       >
         <svg
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 h-full w-full text-teal-800 opacity-[0.12] dark:text-teal-300 dark:opacity-[0.14]"
+          className="pointer-events-none absolute inset-0 h-full w-full text-teal-800 opacity-[0.14] dark:text-teal-300 dark:opacity-[0.15]"
           xmlns="http://w3.org"
         >
           <defs>
-            <pattern id="header-micro-pattern" width="68" height="36" patternUnits="userSpaceOnUse">
-              <text
-                x="4"
-                y="15"
-                transform="rotate(-18 22 14)"
-                fill="currentColor"
-                fontSize="8.5"
-                fontWeight="700"
-                fontFamily="'Caveat', cursive"
-                letterSpacing="0.4"
-              >
+            <pattern id="header-micro-pattern" width="36" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(-16)">
+              <text x="1" y="7" fill="currentColor" fontSize="5.5" fontWeight="700" fontFamily="'Caveat', cursive" letterSpacing="0.3">
                 MyNotePro
               </text>
-              <text
-                x="36"
-                y="32"
-                transform="rotate(-18 54 31)"
-                fill="currentColor"
-                fontSize="8.5"
-                fontWeight="700"
-                fontFamily="'Caveat', cursive"
-                letterSpacing="0.4"
-              >
+              <text x="19" y="16" fill="currentColor" fontSize="5.5" fontWeight="700" fontFamily="'Caveat', cursive" letterSpacing="0.3">
                 MyNotePro
               </text>
             </pattern>

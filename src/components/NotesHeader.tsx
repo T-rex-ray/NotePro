@@ -73,11 +73,11 @@ export default function NotesHeader(p: NotesHeaderProps) {
         <button
           onClick={p.onOpenSettings}
           aria-label="Настройки"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}
-          className={`!absolute inset-y-0 right-0 z-20 flex w-10 items-center justify-center rounded-l-xl rounded-br-xl ${aquaBtn}`}
+          style={{ top: 'max(env(safe-area-inset-top), 0.25rem)' }}
+          className={`!absolute bottom-1 right-1 z-20 flex w-9 items-center justify-center rounded-xl ${aquaBtn}`}
         >
           {gloss}
-          <span className="relative z-10"><Settings size={19} strokeWidth={2.2} /></span>
+          <span className="relative z-10"><Settings size={18} strokeWidth={2.2} /></span>
         </button>
         {p.searchOpen && (
           <div className="relative z-10 mt-2">

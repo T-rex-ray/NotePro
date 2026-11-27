@@ -27,10 +27,45 @@ export default function NotesHeader(p: NotesHeaderProps) {
   return (
     <header className="sticky top-0 z-10 bg-slate-50/90 pb-1 backdrop-blur dark:bg-slate-900/90">
       <div
-        className="rounded-b-3xl border-b border-teal-200/70 bg-teal-100/70 px-4 pb-3 shadow-xs dark:border-teal-800/50 dark:bg-teal-950/70"
+        className="relative overflow-hidden rounded-b-3xl border-b border-teal-200/70 bg-teal-100/75 px-4 pb-3 shadow-xs dark:border-teal-800/50 dark:bg-teal-950/75"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.75rem)' }}
       >
-        <div className="flex items-center justify-between">
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 h-full w-full text-teal-800 opacity-[0.12] dark:text-teal-300 dark:opacity-[0.14]"
+          xmlns="http://w3.org"
+        >
+          <defs>
+            <pattern id="header-micro-pattern" width="68" height="36" patternUnits="userSpaceOnUse">
+              <text
+                x="4"
+                y="15"
+                transform="rotate(-18 22 14)"
+                fill="currentColor"
+                fontSize="8.5"
+                fontWeight="700"
+                fontFamily="'Caveat', cursive"
+                letterSpacing="0.4"
+              >
+                MyNotePro
+              </text>
+              <text
+                x="36"
+                y="32"
+                transform="rotate(-18 54 31)"
+                fill="currentColor"
+                fontSize="8.5"
+                fontWeight="700"
+                fontFamily="'Caveat', cursive"
+                letterSpacing="0.4"
+              >
+                MyNotePro
+              </text>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#header-micro-pattern)" />
+        </svg>
+        <div className="relative z-10 flex items-center justify-between">
           <h1 className="select-none text-3xl font-bold tracking-wide text-slate-900 dark:text-white" style={{ fontFamily: "'Caveat', cursive" }}>
             MyNote<span className="text-teal-600 dark:text-teal-400">Pro</span>
           </h1>
@@ -44,7 +79,7 @@ export default function NotesHeader(p: NotesHeaderProps) {
           </div>
         </div>
         {p.searchOpen && (
-          <div className="relative mt-2.5">
+          <div className="relative z-10 mt-2.5">
             <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-teal-700/60 dark:text-teal-300/60" />
             <input ref={inputRef} type="text" value={p.query} onChange={(e) => p.onQueryChange(e.target.value)} placeholder="Поиск заметок…" className="w-full rounded-xl border border-teal-300/70 bg-white/85 py-2 pl-10 pr-9 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-teal-500 focus:bg-white dark:border-teal-700/60 dark:bg-slate-900/80 dark:text-white dark:focus:bg-slate-900" />
             <button onClick={p.onCloseSearch} aria-label="Закрыть" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-500 hover:bg-teal-200/40">

@@ -26,12 +26,12 @@ export type ContextAction =
 interface NoteContextMenuProps {
   note: Note | null;
   selectedCount?: number;
-  multiSelectMode?: boolean;
+  allSelected?: boolean;
   onClose: () => void;
   onAction: (action: ContextAction, note: Note) => void;
 }
 const TOP_ACTIONS: { id: ContextAction; label: string; icon: typeof Pin }[] = [
-  { id: 'select', label: 'Отметить', icon: CheckSquare },
+  { id: 'select', label: 'Выбрать все', icon: CheckSquare },
   { id: 'duplicate', label: 'Дублировать', icon: CopyPlus },
   { id: 'pin', label: 'Закрепить', icon: Pin },
   { id: 'share', label: 'Отправить', icon: Send },
@@ -44,19 +44,20 @@ const BOTTOM_ACTIONS: { id: ContextAction; label: string; icon: typeof Archive; 
   { id: 'remind', label: 'Напомнить', icon: Bell },
   { id: 'pdf', label: 'PDF', icon: FileDown },
 ];
-const MULTI_ALLOWED: ContextAction[] = ['archive', 'delete', 'color'];
+const MULTI_ALLOWED: ContextAction[] = ['select', 'archive', 'delete', 'color'];
 export default function NoteContextMenu({
   note,
   selectedCount = 1,
-  multiSelectMode = false,
+  allSelected = false,
   onClose,
   onAction,
 }: NoteContextMenuProps) {
   if (!note) return null;
   const isMulti = selectedCount > 1;
-  const headerText = multiSelectMode ? `Выбрано: ${selectedCount}` : noteTitle(note);
+  const headerText = isMulti ? `Выбрано: ${selectedCount}` : noteTitle(note);
   const renderBtn = ({ id, label, icon: Icon, danger }: { id: ContextAction; label: string; icon: typeof Pin; danger?: boolean }) => {
     const disabled = isMulti && !MULTI_ALLOWED.includes(id);
+    const displayLabel = id === 'select' && allSelected ? 'Снять все' : label;
     return (
       <button
         key={id}
@@ -73,18 +74,15 @@ export default function NoteContextMenu({
       >
         <Icon size={22} strokeWidth={1.8} />
         <span className="w-full truncate px-0.5 text-center text-[11px] font-medium leading-tight">
-          {label}
+          {displayLabel}
         </span>
       </button>
     );
   };
   return (
-    <div className={multiSelectMode ? 'fixed inset-x-0 bottom-0 z-40' : 'fixed inset-0 z-40 flex flex-col justify-end'}>
-      {!multiSelectMode && (
-        <div onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-[1px] transition-opacity" />
-      )}
+    <div className="fixed inset-x-0 bottom-0 z-40">
       <div
-        className="relative z-10 rounded-t-3xl border-t border-slate-200 bg-slate-100/95 px-2 pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.15)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/95"
+        className="relative z-10 rounded-t-3xl border-t border-slate-200 bg-slate-100/95 px-2 pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.16)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/95"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}
       >
         <div className="mb-2 flex items-center justify-between px-3 pb-1">

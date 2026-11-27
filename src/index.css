@@ -1,20 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-html,
-body,
-#root {
-  height: 100%;
+@custom-variant dark (&:where(.dark, .dark *));
+
+.lined-paper {
+  line-height: 28px;
+  background-attachment: local;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 27px,
+    rgba(20, 184, 166, 0.22) 27px,
+    rgba(20, 184, 166, 0.22) 28px
+  );
 }
 
-body {
-  margin: 0;
-  overscroll-behavior-y: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-textarea,
-input {
-  font-family: inherit;
+.dark .lined-paper {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 27px,
+    rgba(45, 212, 191, 0.14) 27px,
+    rgba(45, 212, 191, 0.14) 28px
+  );
 }

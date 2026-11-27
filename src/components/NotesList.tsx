@@ -31,8 +31,9 @@ export default function NotesList(p: NotesListProps) {
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<BottomTab>('notes');
-  const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
-  const [colorEditNoteId, setColorEditNoteId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [multiMode, setMultiMode] = useState(false);
+  const [colorEditIds, setColorEditIds] = useState<string[]>([]);
   const [colorFilter, setColorFilter] = useState<NoteColor | 'all'>('all');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -44,6 +45,7 @@ export default function NotesList(p: NotesListProps) {
     const t = window.setTimeout(() => setToast(''), 2000);
     return () => window.clearTimeout(t);
   }, [toast]);
+  const clearSelection = () => { setSelectedIds([]); setMultiMode(false); };
   const closeSearch = () => { setQuery(''); setSearchOpen(false); setActiveTab('notes'); };
   const toggleMode = () => {
     const next = p.startupMode === 'quick' ? 'list' : 'quick';
@@ -57,6 +59,17 @@ export default function NotesList(p: NotesListProps) {
     else if (tab === 'search') { if (searchOpen) closeSearch(); else { setActiveTab('search'); setSearchOpen(true); } }
     else if (tab === 'calendar') setToast('Календарь заметок — добавим следующим шагом');
     else if (tab === 'menu') setSettingsOpen(true);
+  };
+  const handleCardPress = (id: string) => {
+    if (multiMode) {
+      setSelectedIds((prev) => {
+        const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+        if (next.length === 0) setMultiMode(false);
+        return next;
+      });
+      return;
+    }
+    p.onOpen(id);
   };
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -77,8 +90,15 @@ export default function NotesList(p: NotesListProps) {
     return list;
   }, [p.notes, query, colorFilter, p.sortBy]);
   const handleMenuAction = async (action: ContextAction, note: Note) => {
-    setMenuNoteId(null);
-    if (action === 'share') {
+    const targets = selectedIds.length > 0 ? selectedIds : [note.id];
+    if (action === 'select') {
+      setMultiMode(true);
+      if (!selectedIds.includes(note.id)) setSelectedIds([note.id]);
+      setToast('Нажимайте на заметки, чтобы отметить');
+      return;
+    }
+    if (action === 'share' && targets.length === 1) {
+      clearSelection();
       const text = note.title.trim() ? `${note.title.trim()}\n\n${note.content}` : note.content;
       try {
         if (navigator.share) await navigator.share({ title: noteTitle(note), text });
@@ -86,17 +106,29 @@ export default function NotesList(p: NotesListProps) {
       } catch {}
       return;
     }
-    if (action === 'delete') { p.onMoveToTrash(note.id); setToast('Заметка перемещена в корзину'); return; }
-    if (action === 'color') { setColorEditNoteId(note.id); return; }
+    if (action === 'delete') {
+      targets.forEach((id) => p.onMoveToTrash(id));
+      clearSelection();
+      setToast(targets.length > 1 ? `В корзину: ${targets.length}` : 'Заметка перемещена в корзину');
+      return;
+    }
+    if (action === 'color') {
+      setColorEditIds(targets);
+      clearSelection();
+      return;
+    }
+    clearSelection();
     setToast('Функция будет добавлена следующим шагом');
   };
   const showQuickBar = p.startupMode === 'quick' && !barCollapsed;
   const gridClass = p.viewMode === 'grid' ? 'grid grid-cols-3 gap-2' : p.viewMode === 'large-grid' ? 'grid grid-cols-2 gap-2.5' : 'space-y-2';
+  const activeMenuNote = p.notes.find((n) => n.id === selectedIds) ?? null;
+  const firstColorNote = p.notes.find((n) => n.id === colorEditIds);
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-slate-100/80 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <NotesWallpaper />
       <NotesHeader dark={p.dark} searchOpen={searchOpen} query={query} sortBy={p.sortBy} colorFilter={colorFilter} onToggleTheme={p.onToggleTheme} onOpenSettings={() => setSettingsOpen(true)} onQueryChange={setQuery} onCloseSearch={closeSearch} onOpenSheet={() => setSheetOpen(true)} />
-      <main onTouchStart={collapseBar} onMouseDown={collapseBar} className={`relative z-10 min-h-0 flex-1 overflow-y-auto px-3 pt-1 ${showQuickBar ? 'pb-48' : 'pb-40'}`}>
+      <main onTouchStart={collapseBar} onMouseDown={collapseBar} className={`relative z-10 min-h-0 flex-1 overflow-y-auto px-3 pt-1 ${selectedIds.length > 0 ? 'pb-56' : showQuickBar ? 'pb-48' : 'pb-40'}`}>
         {filtered.length === 0 ? (
           <div className="mt-16 flex flex-col items-center text-center text-slate-400 dark:text-slate-500">
             <FileText size={48} strokeWidth={1.5} />
@@ -106,13 +138,13 @@ export default function NotesList(p: NotesListProps) {
           <ul className={gridClass}>
             {filtered.map((n) => (
               <li key={n.id}>
-                <NoteCard note={n} selected={n.id === menuNoteId} viewMode={p.viewMode} onOpen={p.onOpen} onLongPress={setMenuNoteId} />
+                <NoteCard note={n} selected={selectedIds.includes(n.id)} multiSelectMode={multiMode} viewMode={p.viewMode} onOpen={handleCardPress} onLongPress={(id) => { setMultiMode(false); setSelectedIds([id]); }} />
               </li>
             ))}
           </ul>
         )}
       </main>
-      {showQuickBar ? (
+      {selectedIds.length === 0 && (showQuickBar ? (
         <QuickComposeBar onTapExpand={p.onCreate} />
       ) : (
         <>
@@ -122,8 +154,8 @@ export default function NotesList(p: NotesListProps) {
           </button>
           <BottomNavBar activeTab={activeTab} isQuick={p.startupMode === 'quick'} onSelectTab={handleTab} onToggleMode={toggleMode} />
         </>
-      )}
-      <NotesModals activeMenuNote={p.notes.find((n) => n.id === menuNoteId) ?? null} colorEditNote={p.notes.find((n) => n.id === colorEditNoteId) ?? null} sheetOpen={sheetOpen} settingsOpen={settingsOpen} trashedNotes={p.trashedNotes} startupMode={p.startupMode} colorFilter={colorFilter} sortBy={p.sortBy} viewMode={p.viewMode} toast={toast} onCloseMenu={() => setMenuNoteId(null)} onMenuAction={handleMenuAction} onCloseSheet={() => setSheetOpen(false)} onSelectColorFilter={setColorFilter} onChangeSortBy={p.onChangeSortBy} onChangeViewMode={p.onChangeViewMode} onCloseColorEdit={() => setColorEditNoteId(null)} onApplyNoteColor={(c) => { if (colorEditNoteId) { p.onSetNoteColor(colorEditNoteId, c); setToast('Цвет обновлён'); } }} onCloseSettings={() => setSettingsOpen(false)} onChangeStartupMode={p.onChangeStartupMode} onRestoreNote={p.onRestoreNote} onDeleteForever={p.onDeleteForever} onEmptyTrash={p.onEmptyTrash} />
+      ))}
+      <NotesModals activeMenuNote={activeMenuNote} selectedCount={selectedIds.length} multiSelectMode={multiMode} colorEditActive={colorEditIds.length > 0} currentEditColor={firstColorNote?.color ?? 'default'} sheetOpen={sheetOpen} settingsOpen={settingsOpen} trashedNotes={p.trashedNotes} startupMode={p.startupMode} colorFilter={colorFilter} sortBy={p.sortBy} viewMode={p.viewMode} toast={toast} onCloseMenu={clearSelection} onMenuAction={handleMenuAction} onCloseSheet={() => setSheetOpen(false)} onSelectColorFilter={setColorFilter} onChangeSortBy={p.onChangeSortBy} onChangeViewMode={p.onChangeViewMode} onCloseColorEdit={() => setColorEditIds([])} onApplyNoteColor={(c) => { colorEditIds.forEach((id) => p.onSetNoteColor(id, c)); setColorEditIds([]); setToast('Цвет обновлён'); }} onCloseSettings={() => setSettingsOpen(false)} onChangeStartupMode={p.onChangeStartupMode} onRestoreNote={p.onRestoreNote} onDeleteForever={p.onDeleteForever} onEmptyTrash={p.onEmptyTrash} />
     </div>
   );
 }

@@ -121,7 +121,7 @@ export default function NotesList(p: NotesListProps) {
     setToast('Функция будет добавлена следующим шагом');
   };
   const showQuickBar = p.startupMode === 'quick' && !barCollapsed;
-  const gridClass = p.viewMode === 'grid' ? 'grid grid-cols-3 gap-2' : p.viewMode === 'large-grid' ? 'grid grid-cols-2 gap-2.5' : 'space-y-2';
+  const gridClass = p.viewMode === 'grid' ? 'grid grid-cols-3 gap-2' : p.viewMode === 'large-grid' ? 'grid grid-cols-2 gap-2.5' : 'space-y-1.5';
   const activeMenuNote = p.notes.find((n) => n.id === selectedIds.at(0)) ?? null;
   const firstColorNote = p.notes.find((n) => n.id === colorEditIds.at(0));
   const isSelecting = selectedIds.length > 0;

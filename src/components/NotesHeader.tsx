@@ -30,12 +30,12 @@ export default function NotesHeader(p: NotesHeaderProps) {
     return () => window.clearTimeout(t);
   }, [styleToast]);
   const stripe = NOTE_COLORS.find((c) => c.id === p.colorFilter)?.stripe ?? '';
-  const btn3d = 'border border-teal-200/80 bg-white/90 text-teal-800 shadow-[0_2px_6px_rgba(15,118,110,0.14),inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:bg-white active:scale-95 dark:border-teal-700/60 dark:bg-slate-800/90 dark:text-teal-300 dark:shadow-[0_2px_8px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)]';
+  const btn3d = 'border border-teal-300/90 border-b-[3px] border-b-teal-500/70 bg-gradient-to-b from-white to-teal-50/90 text-teal-800 shadow-[0_3px_6px_rgba(15,118,110,0.22),inset_0_1px_1px_rgba(255,255,255,1)] transition-all active:translate-y-[1.5px] active:border-b active:shadow-[0_1px_2px_rgba(15,118,110,0.2)] dark:border-teal-700/70 dark:border-b-[3px] dark:border-b-black/80 dark:from-slate-700 dark:to-slate-800 dark:text-teal-300 dark:shadow-[0_3px_8px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.15)]';
   return (
     <header className="sticky top-0 z-10 bg-transparent">
       <div
-        className="relative overflow-hidden rounded-b-xl border-b border-teal-200/70 bg-teal-100/85 px-3.5 py-2 shadow-xs backdrop-blur dark:border-teal-800/50 dark:bg-teal-950/85"
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 0.5rem)' }}
+        className="relative overflow-hidden rounded-b-xl border-b border-teal-200/70 bg-teal-100/85 pl-3.5 pr-1 pb-1.5 shadow-xs backdrop-blur dark:border-teal-800/50 dark:bg-teal-950/85"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 0.35rem)' }}
       >
         <svg
           aria-hidden="true"
@@ -55,26 +55,26 @@ export default function NotesHeader(p: NotesHeaderProps) {
           <rect width="100%" height="100%" fill="url(#header-micro-pattern)" />
         </svg>
         <div className="relative z-10 flex items-center justify-between">
-          <h1 className="select-none text-[28px] leading-none font-bold tracking-wide text-slate-900 dark:text-white" style={{ fontFamily: "'Caveat', cursive" }}>
+          <h1 className="select-none text-[27px] leading-none font-bold tracking-wide text-slate-900 dark:text-white" style={{ fontFamily: "'Caveat', cursive" }}>
             MyNote<span className="text-teal-600 dark:text-teal-400">Pro</span>
           </h1>
           <div className="flex items-center gap-2">
             <button onClick={p.onToggleTheme} aria-label="День / Ночь" className={`flex h-9 w-9 items-center justify-center rounded-full ${btn3d}`}>
-              {p.dark ? <Sun size={18} strokeWidth={2.1} /> : <Moon size={18} strokeWidth={2.1} />}
+              {p.dark ? <Sun size={18} strokeWidth={2.2} /> : <Moon size={18} strokeWidth={2.2} />}
             </button>
             <button onClick={() => setStyleToast(true)} aria-label="Оформление" className={`flex h-9 w-9 items-center justify-center rounded-full ${btn3d}`}>
-              <Palette size={18} strokeWidth={2.1} />
+              <Palette size={18} strokeWidth={2.2} />
             </button>
-            <button onClick={p.onOpenSettings} aria-label="Настройки" className={`flex h-11 w-9 items-center justify-center rounded-xl ${btn3d}`}>
-              <Settings size={19} strokeWidth={2.1} />
+            <button onClick={p.onOpenSettings} aria-label="Настройки" className={`flex h-10 w-8 items-center justify-center rounded-l-xl rounded-r-md ${btn3d}`}>
+              <Settings size={18} strokeWidth={2.2} />
             </button>
           </div>
         </div>
         {p.searchOpen && (
-          <div className="relative z-10 mt-2">
+          <div className="relative z-10 mt-2 pr-2.5">
             <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-teal-700/60 dark:text-teal-300/60" />
             <input ref={inputRef} type="text" value={p.query} onChange={(e) => p.onQueryChange(e.target.value)} placeholder="Поиск заметок…" className="w-full rounded-xl border border-teal-300/70 bg-white/85 py-1.5 pl-10 pr-9 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-teal-500 focus:bg-white dark:border-teal-700/60 dark:bg-slate-900/80 dark:text-white dark:focus:bg-slate-900" />
-            <button onClick={p.onCloseSearch} aria-label="Закрыть" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-500 hover:bg-teal-200/40">
+            <button onClick={p.onCloseSearch} aria-label="Закрыть" className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-500 hover:bg-teal-200/40">
               <X size={16} />
             </button>
           </div>

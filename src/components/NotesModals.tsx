@@ -5,7 +5,7 @@ import ViewSortSheet from './ViewSortSheet';
 interface NotesModalsProps {
   activeMenuNote: Note | null;
   selectedCount: number;
-  multiSelectMode: boolean;
+  allSelected: boolean;
   colorEditActive: boolean;
   currentEditColor: NoteColor;
   sheetOpen: boolean;
@@ -36,7 +36,7 @@ export default function NotesModals(p: NotesModalsProps) {
       <NoteContextMenu
         note={p.activeMenuNote}
         selectedCount={p.selectedCount}
-        multiSelectMode={p.multiSelectMode}
+        allSelected={p.allSelected}
         onClose={p.onCloseMenu}
         onAction={p.onMenuAction}
       />

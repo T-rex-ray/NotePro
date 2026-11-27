@@ -32,7 +32,6 @@ export default function NotesList(p: NotesListProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<BottomTab>('notes');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [multiMode, setMultiMode] = useState(false);
   const [colorEditIds, setColorEditIds] = useState<string[]>([]);
   const [colorFilter, setColorFilter] = useState<NoteColor | 'all'>('all');
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -45,7 +44,7 @@ export default function NotesList(p: NotesListProps) {
     const t = window.setTimeout(() => setToast(''), 2000);
     return () => window.clearTimeout(t);
   }, [toast]);
-  const clearSelection = () => { setSelectedIds([]); setMultiMode(false); };
+  const clearSelection = () => setSelectedIds([]);
   const closeSearch = () => { setQuery(''); setSearchOpen(false); setActiveTab('notes'); };
   const toggleMode = () => {
     const next = p.startupMode === 'quick' ? 'list' : 'quick';
@@ -53,7 +52,13 @@ export default function NotesList(p: NotesListProps) {
     p.onChangeStartupMode(next);
     setToast(next === 'quick' ? 'Режим: Быстрая панель' : 'Режим: Стандартный');
   };
-  const collapseBar = () => { if (p.startupMode === 'quick' && !barCollapsed) setBarCollapsed(true); };
+  const handleMainTouch = (e: React.TouchEvent | React.MouseEvent) => {
+    if (selectedIds.length > 0 && e.target === e.currentTarget) {
+      clearSelection();
+      return;
+    }
+    if (p.startupMode === 'quick' && !barCollapsed) setBarCollapsed(true);
+  };
   const handleTab = (tab: BottomTab) => {
     if (tab === 'notes') { setActiveTab('notes'); if (searchOpen) closeSearch(); }
     else if (tab === 'search') { if (searchOpen) closeSearch(); else { setActiveTab('search'); setSearchOpen(true); } }
@@ -61,12 +66,8 @@ export default function NotesList(p: NotesListProps) {
     else if (tab === 'menu') setSettingsOpen(true);
   };
   const handleCardPress = (id: string) => {
-    if (multiMode) {
-      setSelectedIds((prev) => {
-        const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-        if (next.length === 0) setMultiMode(false);
-        return next;
-      });
+    if (selectedIds.length > 0) {
+      setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
       return;
     }
     p.onOpen(id);
@@ -92,9 +93,8 @@ export default function NotesList(p: NotesListProps) {
   const handleMenuAction = async (action: ContextAction, note: Note) => {
     const targets = selectedIds.length > 0 ? selectedIds : [note.id];
     if (action === 'select') {
-      setMultiMode(true);
-      if (!selectedIds.includes(note.id)) setSelectedIds([note.id]);
-      setToast('Нажимайте на заметки, чтобы отметить');
+      if (filtered.length > 0 && selectedIds.length >= filtered.length) clearSelection();
+      else setSelectedIds(filtered.map((n) => n.id));
       return;
     }
     if (action === 'share' && targets.length === 1) {
@@ -124,11 +124,12 @@ export default function NotesList(p: NotesListProps) {
   const gridClass = p.viewMode === 'grid' ? 'grid grid-cols-3 gap-2' : p.viewMode === 'large-grid' ? 'grid grid-cols-2 gap-2.5' : 'space-y-2';
   const activeMenuNote = p.notes.find((n) => n.id === selectedIds.at(0)) ?? null;
   const firstColorNote = p.notes.find((n) => n.id === colorEditIds.at(0));
+  const isSelecting = selectedIds.length > 0;
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-slate-100/80 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <NotesWallpaper />
       <NotesHeader dark={p.dark} searchOpen={searchOpen} query={query} sortBy={p.sortBy} colorFilter={colorFilter} onToggleTheme={p.onToggleTheme} onOpenSettings={() => setSettingsOpen(true)} onQueryChange={setQuery} onCloseSearch={closeSearch} onOpenSheet={() => setSheetOpen(true)} />
-      <main onTouchStart={collapseBar} onMouseDown={collapseBar} className={`relative z-10 min-h-0 flex-1 overflow-y-auto px-3 pt-1 ${selectedIds.length > 0 ? 'pb-56' : showQuickBar ? 'pb-48' : 'pb-40'}`}>
+      <main onTouchStart={handleMainTouch} onMouseDown={handleMainTouch} className={`relative z-10 min-h-0 flex-1 overflow-y-auto px-3 pt-1 ${isSelecting ? 'pb-56' : showQuickBar ? 'pb-48' : 'pb-40'}`}>
         {filtered.length === 0 ? (
           <div className="mt-16 flex flex-col items-center text-center text-slate-400 dark:text-slate-500">
             <FileText size={48} strokeWidth={1.5} />
@@ -138,13 +139,13 @@ export default function NotesList(p: NotesListProps) {
           <ul className={gridClass}>
             {filtered.map((n) => (
               <li key={n.id}>
-                <NoteCard note={n} selected={selectedIds.includes(n.id)} multiSelectMode={multiMode} viewMode={p.viewMode} onOpen={handleCardPress} onLongPress={(id) => { setMultiMode(false); setSelectedIds([id]); }} />
+                <NoteCard note={n} selected={selectedIds.includes(n.id)} multiSelectMode={isSelecting} viewMode={p.viewMode} onOpen={handleCardPress} onLongPress={(id) => setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]))} />
               </li>
             ))}
           </ul>
         )}
       </main>
-      {selectedIds.length === 0 && (showQuickBar ? (
+      {!isSelecting && (showQuickBar ? (
         <QuickComposeBar onTapExpand={p.onCreate} />
       ) : (
         <>
@@ -155,7 +156,7 @@ export default function NotesList(p: NotesListProps) {
           <BottomNavBar activeTab={activeTab} isQuick={p.startupMode === 'quick'} onSelectTab={handleTab} onToggleMode={toggleMode} />
         </>
       ))}
-      <NotesModals activeMenuNote={activeMenuNote} selectedCount={selectedIds.length} multiSelectMode={multiMode} colorEditActive={colorEditIds.length > 0} currentEditColor={firstColorNote?.color ?? 'default'} sheetOpen={sheetOpen} settingsOpen={settingsOpen} trashedNotes={p.trashedNotes} startupMode={p.startupMode} colorFilter={colorFilter} sortBy={p.sortBy} viewMode={p.viewMode} toast={toast} onCloseMenu={clearSelection} onMenuAction={handleMenuAction} onCloseSheet={() => setSheetOpen(false)} onSelectColorFilter={setColorFilter} onChangeSortBy={p.onChangeSortBy} onChangeViewMode={p.onChangeViewMode} onCloseColorEdit={() => setColorEditIds([])} onApplyNoteColor={(c) => { colorEditIds.forEach((id) => p.onSetNoteColor(id, c)); setColorEditIds([]); setToast('Цвет обновлён'); }} onCloseSettings={() => setSettingsOpen(false)} onChangeStartupMode={p.onChangeStartupMode} onRestoreNote={p.onRestoreNote} onDeleteForever={p.onDeleteForever} onEmptyTrash={p.onEmptyTrash} />
+      <NotesModals activeMenuNote={activeMenuNote} selectedCount={selectedIds.length} allSelected={filtered.length > 0 && selectedIds.length >= filtered.length} colorEditActive={colorEditIds.length > 0} currentEditColor={firstColorNote?.color ?? 'default'} sheetOpen={sheetOpen} settingsOpen={settingsOpen} trashedNotes={p.trashedNotes} startupMode={p.startupMode} colorFilter={colorFilter} sortBy={p.sortBy} viewMode={p.viewMode} toast={toast} onCloseMenu={clearSelection} onMenuAction={handleMenuAction} onCloseSheet={() => setSheetOpen(false)} onSelectColorFilter={setColorFilter} onChangeSortBy={p.onChangeSortBy} onChangeViewMode={p.onChangeViewMode} onCloseColorEdit={() => setColorEditIds([])} onApplyNoteColor={(c) => { colorEditIds.forEach((id) => p.onSetNoteColor(id, c)); setColorEditIds([]); setToast('Цвет обновлён'); }} onCloseSettings={() => setSettingsOpen(false)} onChangeStartupMode={p.onChangeStartupMode} onRestoreNote={p.onRestoreNote} onDeleteForever={p.onDeleteForever} onEmptyTrash={p.onEmptyTrash} />
     </div>
   );
 }

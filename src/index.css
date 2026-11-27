@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 .lined-paper {
   line-height: 28px;
   background-attachment: local;
